@@ -15,11 +15,11 @@ CREATE TABLE roles (
 
 CREATE TABLE users (
     user_id SERIAL,
-    username VARCHAR(50),
-    email VARCHAR(100),
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    password VARCHAR(255) NOT NULL,
     role_id INT
 );
-
 -- ==========================================
 -- Departments Table
 -- ==========================================
