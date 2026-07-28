@@ -1,7 +1,6 @@
 package com.orgkgi.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
 
 @Entity
 @Table(name = "skills")
@@ -11,8 +10,7 @@ public class Skill {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
-    @Column(name = "skillName", nullable = false, unique = true)
+    @Column(name = "skill_name", nullable = true, unique = true)
     private String skillName;
 
     @Column(nullable = true)
@@ -43,6 +41,15 @@ public class Skill {
     }
 
     public void setName(String skillName) {
+        this.skillName = skillName;
+    }
+
+    // Alias accessors for repository/property consistency
+    public String getSkillName() {
+        return skillName;
+    }
+
+    public void setSkillName(String skillName) {
         this.skillName = skillName;
     }
 

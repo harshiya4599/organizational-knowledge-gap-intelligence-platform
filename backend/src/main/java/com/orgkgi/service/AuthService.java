@@ -1,6 +1,5 @@
 package com.orgkgi.service;
 
-import com.orgkgi.dto.ForgotPasswordRequest;
 import com.orgkgi.dto.LoginRequest;
 import com.orgkgi.dto.LoginResponse;
 import com.orgkgi.dto.ProfileUpdateRequest;
@@ -12,6 +11,11 @@ import com.orgkgi.entity.User;
 import com.orgkgi.repository.RoleRepository;
 import com.orgkgi.repository.UserRepository;
 import com.orgkgi.security.JwtTokenProvider;
+import com.orgkgi.entity.PasswordResetToken;
+import com.orgkgi.repository.PasswordResetTokenRepository;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -33,6 +37,8 @@ public class AuthService {
     private PasswordEncoder passwordEncoder;
     @Autowired
     private JwtTokenProvider tokenProvider;
+    @Autowired
+    private PasswordResetTokenRepository passwordResetTokenRepository;
 
     public String authenticateUser(LoginRequest loginRequest) {
         Authentication authentication = authenticationManager.authenticate(
@@ -46,11 +52,21 @@ public class AuthService {
     }
 
     public String forgotPassword(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("No account found with that email"));
+        // Do not reveal whether an account exists. If it does, create a token and persist it.
+        userRepository.findByEmail(email).ifPresent(user -> {
+            // remove any existing tokens for the user
+            try {
+                passwordResetTokenRepository.deleteByUser(user);
+            } catch (Exception ignored) {}
 
-        // TODO: generate a password reset token, store it with an expiry,
-        // and email it to the user. For now this is just a skeleton.
+            String token = UUID.randomUUID().toString();
+            Instant expiry = Instant.now().plus(1, ChronoUnit.HOURS);
+            PasswordResetToken prt = new PasswordResetToken(token, user, expiry);
+            passwordResetTokenRepository.save(prt);
+
+            // NOTE: sending the token via email is out of scope here. In production,
+            // enqueue an email with a link like: https://example.com/reset-password?token={token}
+        });
 
         return "If an account exists for this email, a password reset link has been sent.";
     }

@@ -1,8 +1,8 @@
 package com.orgkgi.service;
 
 import com.orgkgi.entity.Skill;
-import com.orgkgi.exception.DuplicateSkillException;
 import com.orgkgi.exception.SkillNotFoundException;
+import com.orgkgi.exception.DuplicateSkillException;
 import com.orgkgi.repository.SkillRepository;
 import org.springframework.stereotype.Service;
 
@@ -21,7 +21,7 @@ public class SkillService {
     public Skill addSkill(Skill skill) {
 
         if(skillRepository.existsBySkillName(skill.getName())) {
-            throw new RuntimeException("Skill already exists");
+            throw new DuplicateSkillException("Skill already exists: " + skill.getName());
         }
 
         return skillRepository.save(skill);
