@@ -26,28 +26,28 @@ VALUES
 -- Users
 -- ==========================================
 
-INSERT INTO users (username, email, password, role_id)
+INSERT INTO organization.users (username, email, password, role_id)
 VALUES
-('emp01','emp01@gmail.com','Emp01@123',3),
-('emp02','emp02@gmail.com','Emp02@123',3),
-('emp03','emp03@gmail.com','Emp03@123',3),
-('emp04','emp04@gmail.com','Emp04@123',3),
-('emp05','emp05@gmail.com','Emp05@123',3),
-('emp06','emp06@gmail.com','Emp06@123',3),
-('emp07','emp07@gmail.com','Emp07@123',3),
-('emp08','emp08@gmail.com','Emp08@123',3),
-('emp09','emp09@gmail.com','Emp09@123',3),
-('emp10','emp10@gmail.com','Emp10@123',3),
-('emp11','emp11@gmail.com','Emp11@123',3),
-('emp12','emp12@gmail.com','Emp12@123',3),
-('emp13','emp13@gmail.com','Emp13@123',3),
-('emp14','emp14@gmail.com','Emp14@123',3),
-('emp15','emp15@gmail.com','Emp15@123',3),
-('emp16','emp16@gmail.com','Emp16@123',3),
-('emp17','emp17@gmail.com','Emp17@123',3),
-('emp18','emp18@gmail.com','Emp18@123',3),
-('emp19','emp19@gmail.com','Emp19@123',3),
-('emp20','emp20@gmail.com','Emp20@123',3);
+('emp01','emp01@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
+('emp02','emp02@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
+('emp03','emp03@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
+('emp04','emp04@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
+('emp05','emp05@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
+('emp06','emp06@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
+('emp07','emp07@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
+('emp08','emp08@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
+('emp09','emp09@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
+('emp10','emp10@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
+('emp11','emp11@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
+('emp12','emp12@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
+('emp13','emp13@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
+('emp14','emp14@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
+('emp15','emp15@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
+('emp16','emp16@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
+('emp17','emp17@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
+('emp18','emp18@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
+('emp19','emp19@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
+('emp20','emp20@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3);
 
 -- ==========================================
 -- Employees
