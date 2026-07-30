@@ -5,8 +5,9 @@ import ProtectedRoute   from '../components/auth/ProtectedRoute';
 import DashboardLayout  from '../components/layout/DashboardLayout';
 
 // Public pages
-import Login    from '../pages/auth/Login';
-import Register from '../pages/auth/Register';
+import Login         from '../pages/auth/Login';
+import Register      from '../pages/auth/Register';
+import ForgotPassword from '../pages/auth/ForgotPassword';
 
 // Protected pages
 import Dashboard          from '../pages/dashboard/Dashboard';
@@ -32,6 +33,7 @@ export default function AppRoutes() {
       <Route path="/"         element={<Login />} />
       <Route path="/login"    element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
 
       {/* ── Protected routes (inside DashboardLayout) ────────── */}

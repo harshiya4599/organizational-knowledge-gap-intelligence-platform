@@ -1,5 +1,6 @@
 package com.orgkgi.service;
 
+import com.orgkgi.dto.ForgotPasswordResponse;
 import com.orgkgi.dto.LoginRequest;
 import com.orgkgi.dto.LoginResponse;
 import com.orgkgi.dto.ProfileUpdateRequest;
@@ -23,6 +24,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthService {
@@ -39,6 +41,8 @@ public class AuthService {
     private JwtTokenProvider tokenProvider;
     @Autowired
     private PasswordResetTokenRepository passwordResetTokenRepository;
+    @Autowired
+    private EmailService emailService;
 
     public String authenticateUser(LoginRequest loginRequest) {
         Authentication authentication = authenticationManager.authenticate(
@@ -51,24 +55,40 @@ public class AuthService {
         return tokenProvider.generateToken(authentication);
     }
 
-    public String forgotPassword(String email) {
-        // Do not reveal whether an account exists. If it does, create a token and persist it.
-        userRepository.findByEmail(email).ifPresent(user -> {
-            // remove any existing tokens for the user
-            try {
-                passwordResetTokenRepository.deleteByUser(user);
-            } catch (Exception ignored) {}
+    @Transactional
+    public ForgotPasswordResponse forgotPassword(String usernameOrEmail) {
+        String message = "If an account exists for this email or username, a password reset email has been sent.";
 
-            String token = UUID.randomUUID().toString();
-            Instant expiry = Instant.now().plus(1, ChronoUnit.HOURS);
-            PasswordResetToken prt = new PasswordResetToken(token, user, expiry);
-            passwordResetTokenRepository.save(prt);
+        userRepository.findByUsername(usernameOrEmail)
+                .or(() -> userRepository.findByEmail(usernameOrEmail))
+                .ifPresent(user -> {
+                    try {
+                        passwordResetTokenRepository.deleteByUser(user);
+                    } catch (Exception ignored) {}
 
-            // NOTE: sending the token via email is out of scope here. In production,
-            // enqueue an email with a link like: https://example.com/reset-password?token={token}
-        });
+                    String token = UUID.randomUUID().toString();
+                    Instant expiry = Instant.now().plus(1, ChronoUnit.HOURS);
+                    PasswordResetToken prt = new PasswordResetToken(token, user, expiry);
+                    passwordResetTokenRepository.save(prt);
+                    emailService.sendPasswordResetEmail(user.getEmail(), token);
+                });
 
-        return "If an account exists for this email, a password reset link has been sent.";
+        return new ForgotPasswordResponse(message);
+    }
+
+    public void resetPassword(String token, String newPassword) {
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Invalid or expired password reset token."));
+
+        if (resetToken.getExpiryDate().isBefore(Instant.now())) {
+            passwordResetTokenRepository.delete(resetToken);
+            throw new RuntimeException("Invalid or expired password reset token.");
+        }
+
+        User user = resetToken.getUser();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        passwordResetTokenRepository.delete(resetToken);
     }
 
     public User registerUser(RegisterRequest registerRequest) {

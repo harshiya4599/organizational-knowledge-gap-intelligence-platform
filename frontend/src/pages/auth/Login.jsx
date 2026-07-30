@@ -163,7 +163,7 @@ export default function Login() {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label htmlFor="password" className="form-label mb-0">Password</label>
-                <span className="text-xs text-blue-600 cursor-pointer hover:underline font-medium">Forgot password?</span>
+                <Link to="/forgot-password" className="text-xs text-blue-600 hover:underline font-medium">Forgot password?</Link>
               </div>
               <input
                 id="password" name="password" type="password" autoComplete="current-password"

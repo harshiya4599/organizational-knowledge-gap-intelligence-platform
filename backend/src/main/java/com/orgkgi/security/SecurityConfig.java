@@ -63,7 +63,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   CustomOAuth2UserService customOAuth2UserService,
+                                                   OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
@@ -76,21 +78,32 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Authentication APIs
                         .requestMatchers("/api/auth/**").permitAll()
-                        // Employee Module
-                        .requestMatchers("/employees/**").permitAll()
-                        .requestMatchers("/departments/**").permitAll()
-                        // Milestone 2 APIs
-                        .requestMatchers("/skills/**").permitAll()
-                        .requestMatchers("/employee-skills/**").permitAll()
-                        .requestMatchers("/competencies/**").permitAll()
-                        .requestMatchers("/gap-analysis/**").permitAll()
-                        .requestMatchers("/recommendations/**").permitAll()
+                        .requestMatchers("/oauth2/**").permitAll()
+                        // Role / Department management is restricted to admin users
+                        .requestMatchers("/roles/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/departments/**").hasAuthority("ROLE_ADMIN")
+                        // Employee and skill module endpoints require authentication
+                        .requestMatchers("/employees/**").authenticated()
+                        .requestMatchers("/skills/**").authenticated()
+                        .requestMatchers("/employee-skills/**").authenticated()
+                        .requestMatchers("/competencies/**").authenticated()
+                        .requestMatchers("/gap-analysis/**").authenticated()
+                        .requestMatchers("/recommendations/**").authenticated()
+                        .requestMatchers("/certifications/**").authenticated()
+                        .requestMatchers("/education-history/**").authenticated()
+                        .requestMatchers("/experiences/**").authenticated()
+                        .requestMatchers("/peer-assessments/**").authenticated()
                         // Everything else requires JWT
                         .anyRequest().authenticated()
                 );
 
         http.addFilterBefore(jwtAuthenticationFilter,
                 UsernamePasswordAuthenticationFilter.class);
+
+        http.oauth2Login(oauth2 -> oauth2
+                .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
+                .successHandler(oAuth2LoginSuccessHandler)
+        );
 
         return http.build();
     }

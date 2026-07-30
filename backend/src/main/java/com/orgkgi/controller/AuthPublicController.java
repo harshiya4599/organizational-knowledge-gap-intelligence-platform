@@ -1,28 +1,21 @@
 package com.orgkgi.controller;
 
+import com.orgkgi.dto.ForgotPasswordRequest;
+import com.orgkgi.dto.ForgotPasswordResponse;
+import com.orgkgi.dto.ResetPasswordRequest;
 import com.orgkgi.service.AuthService;
-import com.orgkgi.dto.*;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/auth")
-public class AuthController {
+public class AuthPublicController {
 
     private final AuthService authService;
 
-    public AuthController(AuthService authService) {
+    public AuthPublicController(AuthService authService) {
         this.authService = authService;
-    }
-
-    @PostMapping(value = "/register", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest request) {
-        return ResponseEntity.ok(authService.register(request));
-    }
-
-    @PostMapping(value = "/login", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
     }
 
     @PostMapping(value = "/forgot-password", consumes = "application/json", produces = "application/json")
