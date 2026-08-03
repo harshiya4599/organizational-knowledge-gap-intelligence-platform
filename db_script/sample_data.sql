@@ -26,28 +26,29 @@ VALUES
 -- Users
 -- ==========================================
 
+-- Seeded password for all users below is 1234
 INSERT INTO organization.users (username, email, password, role_id)
 VALUES
-('emp01','emp01@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
-('emp02','emp02@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
-('emp03','emp03@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
-('emp04','emp04@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
-('emp05','emp05@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
-('emp06','emp06@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
-('emp07','emp07@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
-('emp08','emp08@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
-('emp09','emp09@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
-('emp10','emp10@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
-('emp11','emp11@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
-('emp12','emp12@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
-('emp13','emp13@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
-('emp14','emp14@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
-('emp15','emp15@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
-('emp16','emp16@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
-('emp17','emp17@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
-('emp18','emp18@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
-('emp19','emp19@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3),
-('emp20','emp20@gmail.com','$2a$10$NYi/dUpSUNF7PJ/C8etAg..C0niWrtKSIbWqWD44jQco6Fq6XQGFi',3);
+('emp01','emp01@gmail.com','$2a$10$ECMGgkmcdEohejuAJW.K7eBPr6ItHMdkdKssvR6H7.aiWFPosrfs2',3),
+('emp02','emp02@gmail.com','$2a$10$ECMGgkmcdEohejuAJW.K7eBPr6ItHMdkdKssvR6H7.aiWFPosrfs2',3),
+('emp03','emp03@gmail.com','$2a$10$ECMGgkmcdEohejuAJW.K7eBPr6ItHMdkdKssvR6H7.aiWFPosrfs2',3),
+('emp04','emp04@gmail.com','$2a$10$ECMGgkmcdEohejuAJW.K7eBPr6ItHMdkdKssvR6H7.aiWFPosrfs2',3),
+('emp05','emp05@gmail.com','$2a$10$ECMGgkmcdEohejuAJW.K7eBPr6ItHMdkdKssvR6H7.aiWFPosrfs2',3),
+('emp06','emp06@gmail.com','$2a$10$ECMGgkmcdEohejuAJW.K7eBPr6ItHMdkdKssvR6H7.aiWFPosrfs2',3),
+('emp07','emp07@gmail.com','$2a$10$ECMGgkmcdEohejuAJW.K7eBPr6ItHMdkdKssvR6H7.aiWFPosrfs2',3),
+('emp08','emp08@gmail.com','$2a$10$ECMGgkmcdEohejuAJW.K7eBPr6ItHMdkdKssvR6H7.aiWFPosrfs2',3),
+('emp09','emp09@gmail.com','$2a$10$ECMGgkmcdEohejuAJW.K7eBPr6ItHMdkdKssvR6H7.aiWFPosrfs2',3),
+('emp10','emp10@gmail.com','$2a$10$ECMGgkmcdEohejuAJW.K7eBPr6ItHMdkdKssvR6H7.aiWFPosrfs2',3),
+('emp11','emp11@gmail.com','$2a$10$ECMGgkmcdEohejuAJW.K7eBPr6ItHMdkdKssvR6H7.aiWFPosrfs2',3),
+('emp12','emp12@gmail.com','$2a$10$ECMGgkmcdEohejuAJW.K7eBPr6ItHMdkdKssvR6H7.aiWFPosrfs2',3),
+('emp13','emp13@gmail.com','$2a$10$ECMGgkmcdEohejuAJW.K7eBPr6ItHMdkdKssvR6H7.aiWFPosrfs2',3),
+('emp14','emp14@gmail.com','$2a$10$ECMGgkmcdEohejuAJW.K7eBPr6ItHMdkdKssvR6H7.aiWFPosrfs2',3),
+('emp15','emp15@gmail.com','$2a$10$ECMGgkmcdEohejuAJW.K7eBPr6ItHMdkdKssvR6H7.aiWFPosrfs2',3),
+('emp16','emp16@gmail.com','$2a$10$ECMGgkmcdEohejuAJW.K7eBPr6ItHMdkdKssvR6H7.aiWFPosrfs2',3),
+('emp17','emp17@gmail.com','$2a$10$ECMGgkmcdEohejuAJW.K7eBPr6ItHMdkdKssvR6H7.aiWFPosrfs2',3),
+('emp18','emp18@gmail.com','$2a$10$ECMGgkmcdEohejuAJW.K7eBPr6ItHMdkdKssvR6H7.aiWFPosrfs2',3),
+('emp19','emp19@gmail.com','$2a$10$ECMGgkmcdEohejuAJW.K7eBPr6ItHMdkdKssvR6H7.aiWFPosrfs2',3),
+('emp20','emp20@gmail.com','$2a$10$ECMGgkmcdEohejuAJW.K7eBPr6ItHMdkdKssvR6H7.aiWFPosrfs2',3);
 
 -- ==========================================
 -- Employees
