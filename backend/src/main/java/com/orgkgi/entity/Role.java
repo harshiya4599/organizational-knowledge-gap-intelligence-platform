@@ -9,11 +9,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "roles")
+@Table(name = "roles", schema = "organization")
 public class Role {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "role_id")
     private Long id;
 
     @NotBlank(message = "Role name is required")
@@ -28,19 +29,15 @@ public class Role {
     @JsonIgnore
     private List<User> users = new ArrayList<>();
 
-    // Default Constructor (Required by Hibernate)
     public Role() {
     }
 
-    // Parameterized Constructor
     public Role(Long id, String roleName, String description, List<User> users) {
         this.id = id;
         this.roleName = roleName;
         this.description = description;
         this.users = users;
     }
-
-    // Getters & Setters
 
     public Long getId() {
         return id;
