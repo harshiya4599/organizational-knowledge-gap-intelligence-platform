@@ -1,0 +1,25 @@
+{
+  "info": {"name": "Organizational Knowledge Gap Platform", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"},
+  "variable": [{"key": "baseUrl", "value": "http://localhost:8080"}, {"key": "token", "value": ""}, {"key": "employeeId", "value": "1"}],
+  "item": [
+    {"name":"Authentication", "item":[
+      {"name":"Register", "request":{"method":"POST", "header":[{"key":"Content-Type","value":"application/json"}], "url":"{{baseUrl}}/api/auth/register", "body":{"mode":"raw","raw":"{\n  \"username\": \"employee1\",\n  \"email\": \"employee1@example.com\",\n  \"password\": \"Password123\",\n  \"role\": \"ROLE_EMPLOYEE\"\n}"}}},
+      {"name":"Login", "event":[{"listen":"test","script":{"exec":["var body = pm.response.json(); pm.collectionVariables.set('token', body.token);"]}}], "request":{"method":"POST", "header":[{"key":"Content-Type","value":"application/json"}], "url":"{{baseUrl}}/api/auth/login", "body":{"mode":"raw","raw":"{\n  \"username\": \"employee1\",\n  \"password\": \"Password123\"\n}"}}},
+      {"name":"Profile", "request":{"method":"GET", "header":[{"key":"Authorization","value":"Bearer {{token}}"}], "url":"{{baseUrl}}/api/profile"}},
+      {"name":"Logout", "request":{"method":"POST", "header":[{"key":"Authorization","value":"Bearer {{token}}"}], "url":"{{baseUrl}}/api/auth/logout"}}
+    ]},
+    {"name":"Assessment", "item":[
+      {"name":"Submit", "request":{"method":"POST", "header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}], "url":"{{baseUrl}}/assessments", "body":{"mode":"raw","raw":"{\n  \"employeeId\": {{employeeId}},\n  \"assessmentType\": \"SELF\",\n  \"skillName\": \"Java\",\n  \"score\": 4,\n  \"comments\": \"Postman test\"\n}"}}},
+      {"name":"Get employee assessments", "request":{"method":"GET", "header":[{"key":"Authorization","value":"Bearer {{token}}"}], "url":"{{baseUrl}}/assessments/{{employeeId}}"}}
+    ]},
+    {"name":"Notifications", "item":[
+      {"name":"Send", "request":{"method":"POST", "header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}], "url":"{{baseUrl}}/notifications/send", "body":{"mode":"raw","raw":"{\"employeeId\":{{employeeId}},\"type\":\"PROGRESS\",\"message\":\"Learning progress updated\"}"}}},
+      {"name":"Get", "request":{"method":"GET", "header":[{"key":"Authorization","value":"Bearer {{token}}"}], "url":"{{baseUrl}}/notifications/{{employeeId}}"}}
+    ]},
+    {"name":"Analytics and reports", "item":[
+      {"name":"Dashboard", "request":{"method":"GET", "header":[{"key":"Authorization","value":"Bearer {{token}}"}], "url":"{{baseUrl}}/dashboard"}},
+      {"name":"Reports", "request":{"method":"GET", "header":[{"key":"Authorization","value":"Bearer {{token}}"}], "url":"{{baseUrl}}/reports"}},
+      {"name":"Generate workforce report", "request":{"method":"POST", "header":[{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}], "url":"{{baseUrl}}/reports/generate", "body":{"mode":"raw","raw":"{\"type\":\"workforce\"}"}}}
+    ]}
+  ]
+}

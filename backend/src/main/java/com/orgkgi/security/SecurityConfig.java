@@ -82,6 +82,12 @@ public class SecurityConfig {
                         // Role / Department management is restricted to admin users
                         .requestMatchers("/roles/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/departments/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/reports/**", "/api/reports/**")
+                        .hasAnyAuthority("ROLE_ADMIN", "ROLE_HR", "ROLE_DEPARTMENT_HEAD")
+                        .requestMatchers("/notifications/send", "/api/notifications/send", "/notifications/reminders/**", "/api/notifications/reminders/**")
+                        .hasAnyAuthority("ROLE_ADMIN", "ROLE_HR", "ROLE_MANAGER", "ROLE_DEPARTMENT_HEAD")
+                        .requestMatchers("/dashboard/**", "/api/dashboard/**")
+                        .hasAnyAuthority("ROLE_ADMIN", "ROLE_HR", "ROLE_MANAGER", "ROLE_DEPARTMENT_HEAD")
                         // Employee and skill module endpoints require authentication
                         .requestMatchers("/employees/**").authenticated()
                         .requestMatchers("/skills/**").authenticated()
@@ -93,6 +99,8 @@ public class SecurityConfig {
                         .requestMatchers("/education-history/**").authenticated()
                         .requestMatchers("/experiences/**").authenticated()
                         .requestMatchers("/peer-assessments/**").authenticated()
+                        .requestMatchers("/assessments/**", "/api/assessments/**").authenticated()
+                        .requestMatchers("/notifications/**", "/api/notifications/**").authenticated()
                         // Everything else requires JWT
                         .anyRequest().authenticated()
                 );
@@ -108,3 +116,4 @@ public class SecurityConfig {
         return http.build();
     }
 }
+    
