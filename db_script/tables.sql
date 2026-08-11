@@ -6,7 +6,8 @@ SET search_path TO organization;
 
 CREATE TABLE roles (
     role_id SERIAL,
-    role_name VARCHAR(50)
+    role_name VARCHAR(50),
+    description VARCHAR(255) -- Added to match Role.java
 );
 
 -- ==========================================
@@ -20,6 +21,7 @@ CREATE TABLE users (
     password VARCHAR(255) NOT NULL,
     role_id INT
 );
+
 -- ==========================================
 -- Departments Table
 -- ==========================================
@@ -33,12 +35,18 @@ CREATE TABLE departments (
 -- Employees Table
 -- ==========================================
 
-CREATE TABLE employees (
-    employee_id SERIAL,
-    user_id INT,
-    department_id INT,
-    salary DECIMAL(10,2),
-    joining_date DATE
+CREATE TABLE organization.employees (
+    id BIGINT PRIMARY KEY,
+    employee_id INTEGER NOT NULL,
+    user_id BIGINT,
+    department_id BIGINT,
+    salary NUMERIC,
+    joining_date DATE,
+    phone VARCHAR(10),
+    employee_code VARCHAR(255),
+    name VARCHAR(100),
+    email VARCHAR(255),
+    designation VARCHAR(255)
 );
 
 -- ==========================================
@@ -48,6 +56,7 @@ CREATE TABLE employees (
 CREATE TABLE skills (
     skill_id SERIAL,
     skill_name VARCHAR(100) NOT NULL,
+    description TEXT, -- Added to match Skill.java
     category VARCHAR(50)
 );
 
@@ -55,11 +64,12 @@ CREATE TABLE skills (
 -- Employee Skills Table
 -- ==========================================
 
-CREATE TABLE employee_skills (
-    employee_skill_id SERIAL,
-    employee_id INT NOT NULL,
-    skill_id INT NOT NULL,
-    skill_level INT CHECK (skill_level BETWEEN 1 AND 5)
+CREATE TABLE organization.employee_skills (
+    id BIGINT PRIMARY KEY,
+    employee_skill_id BIGINT,
+    employee_id BIGINT NOT NULL,
+    skill_id BIGINT NOT NULL,
+    level INTEGER -- Renamed from skill_level
 );
 
 -- ==========================================

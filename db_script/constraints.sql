@@ -112,3 +112,17 @@ ALTER TABLE training_recommendations
 ADD CONSTRAINT fk_training_gap
 FOREIGN KEY (gap_id)
 REFERENCES gap_analysis(gap_id);
+
+--  constraints for the employees table:
+ALTER TABLE organization.employees ALTER COLUMN employee_code SET NOT NULL;
+ALTER TABLE organization.employees ADD CONSTRAINT uq_employee_code UNIQUE (employee_code);
+
+ALTER TABLE organization.employees ALTER COLUMN name SET NOT NULL;
+
+ALTER TABLE organization.employees ALTER COLUMN email SET NOT NULL;
+ALTER TABLE organization.employees ADD CONSTRAINT uq_employee_email UNIQUE (email);
+
+ALTER TABLE organization.employees ALTER COLUMN designation SET NOT NULL;
+
+--  constraint for the employee_skills table:
+ALTER TABLE organization.employee_skills ADD CONSTRAINT chk_level CHECK (level >= 1 AND level <= 5);
