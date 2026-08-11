@@ -48,32 +48,32 @@ export default function ExportToolbar({
     printReport();
   };
 
-  // PDF Export Handler (Backend Ready)
+  // PDF Export Handler
   const handlePDFExport = () => {
-    setLoadingType('pdf');
-    exportToPDF(filename)
-      .then((res) => {
-        setLoadingType(null);
-        showNotification(res.message, 'info');
-      })
-      .catch(() => {
-        setLoadingType(null);
-        showNotification('Failed to generate PDF report.', 'error');
-      });
+    try {
+      if (!data || data.length === 0) {
+        showNotification('No visible data to export to PDF.', 'warning');
+        return;
+      }
+      exportToPDF(data, columns, filename);
+      showNotification(`Generated PDF report for ${data.length} items.`, 'success');
+    } catch (err) {
+      showNotification(err.message || 'Failed to generate PDF report.', 'error');
+    }
   };
 
-  // Excel Export Handler (Backend Ready)
+  // Excel Export Handler
   const handleExcelExport = () => {
-    setLoadingType('excel');
-    exportToExcel(filename)
-      .then((res) => {
-        setLoadingType(null);
-        showNotification(res.message, 'info');
-      })
-      .catch(() => {
-        setLoadingType(null);
-        showNotification('Failed to generate Excel report.', 'error');
-      });
+    try {
+      if (!data || data.length === 0) {
+        showNotification('No visible data to export to Excel.', 'warning');
+        return;
+      }
+      exportToExcel(data, columns, filename);
+      showNotification(`Successfully exported ${data.length} items to Excel (.xls).`, 'success');
+    } catch (err) {
+      showNotification(err.message || 'Failed to generate Excel report.', 'error');
+    }
   };
 
   const TOAST_STYLES = {

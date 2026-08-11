@@ -16,20 +16,29 @@ export function AuthProvider({ children }) {
 
   const isAuthenticated = !!token;
 
-  // On mount or token change, sync user state with backend profile if token exists
+  // On mount or token change, sync user state with stored/backend profile
   useEffect(() => {
     if (token) {
       getProfile()
         .then((profile) => {
-          const normalizedUser = {
-            id: profile.id,
-            username: profile.username,
-            name: profile.username || profile.email || 'User',
-            email: profile.email,
-            role: profile.role || 'ROLE_EMPLOYEE',
-          };
-          saveUser(normalizedUser);
-          setUser(normalizedUser);
+          if (profile) {
+            const cachedUser = getUser() || {};
+            const normalizedUser = {
+              ...cachedUser,
+              ...profile,
+              id: profile.id ?? cachedUser.id,
+              username: profile.username || cachedUser.username || '',
+              name: profile.name || profile.username || cachedUser.name || cachedUser.username || '',
+              email: profile.email || cachedUser.email || '',
+              role: profile.role || cachedUser.role || 'ROLE_EMPLOYEE',
+              phone: profile.phone || cachedUser.phone || '',
+              department: profile.department || cachedUser.department || '',
+              designation: profile.designation || cachedUser.designation || '',
+              avatarUrl: profile.avatarUrl || cachedUser.avatarUrl || '',
+            };
+            saveUser(normalizedUser);
+            setUser(normalizedUser);
+          }
         })
         .catch((err) => {
           // If token is invalid or expired (401/403), logout
@@ -81,4 +90,3 @@ export function useAuth() {
 }
 
 export default AuthContext;
-

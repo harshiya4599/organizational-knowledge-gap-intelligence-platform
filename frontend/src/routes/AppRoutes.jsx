@@ -1,8 +1,9 @@
 import { Routes, Route } from 'react-router-dom';
 
 // Layout & guards
-import ProtectedRoute   from '../components/auth/ProtectedRoute';
-import DashboardLayout  from '../components/layout/DashboardLayout';
+import ProtectedRoute    from '../components/auth/ProtectedRoute';
+import RequirePermission from '../components/auth/RequirePermission';
+import DashboardLayout   from '../components/layout/DashboardLayout';
 
 // Public pages
 import Login         from '../pages/auth/Login';
@@ -22,6 +23,14 @@ import GapAnalysis        from '../pages/skills/GapAnalysis';
 import Recommendations    from '../pages/skills/Recommendations';
 import DepartmentSkillMatrix from '../pages/skills/DepartmentSkillMatrix';
 
+// Admin & Governance pages
+import UserManagement     from '../pages/admin/UserManagement';
+import RoleManagement     from '../pages/admin/RoleManagement';
+import TrainingManagement from '../pages/admin/TrainingManagement';
+import SystemSettings     from '../pages/admin/SystemSettings';
+import Reports            from '../pages/reports/Reports';
+import AnalyticsView      from '../pages/analytics/AnalyticsView';
+
 // Common
 import NotFound     from '../pages/common/NotFound';
 import Unauthorized from '../pages/common/Unauthorized';
@@ -39,17 +48,59 @@ export default function AppRoutes() {
       {/* ── Protected routes (inside DashboardLayout) ────────── */}
       <Route element={<ProtectedRoute />}>
         <Route element={<DashboardLayout />}>
-          <Route path="/dashboard"              element={<Dashboard />} />
-          <Route path="/employees"              element={<EmployeeList />} />
-          <Route path="/employees/:id"          element={<EmployeeDetails />} />
-          <Route path="/profile"                element={<EmployeeProfile />} />
-          <Route path="/departments"            element={<DepartmentList />} />
-          <Route path="/skills"                 element={<SkillList />} />
-          <Route path="/employee-skills"        element={<EmployeeSkills />} />
-          <Route path="/competency-matrix"      element={<CompetencyMatrix />} />
-          <Route path="/gap-analysis"           element={<GapAnalysis />} />
-          <Route path="/recommendations"        element={<Recommendations />} />
-          <Route path="/department-skill-matrix" element={<DepartmentSkillMatrix />} />
+
+          {/* Accessible to all 3 roles */}
+          <Route path="/dashboard"         element={<Dashboard />} />
+          <Route path="/profile"           element={<EmployeeProfile />} />
+          <Route path="/competency-matrix" element={<CompetencyMatrix />} />
+          <Route path="/gap-analysis"      element={<GapAnalysis />} />
+          <Route path="/recommendations"   element={<Recommendations />} />
+          <Route path="/learning"          element={<Recommendations />} />
+          <Route path="/employee-skills"   element={<EmployeeSkills />} />
+
+          {/* Manager & Admin permissions */}
+          <Route element={<RequirePermission permission="canViewEmployees" />}>
+            <Route path="/employees"     element={<EmployeeList />} />
+            <Route path="/employees/:id" element={<EmployeeDetails />} />
+          </Route>
+
+          <Route element={<RequirePermission permission="canViewDepartments" />}>
+            <Route path="/departments" element={<DepartmentList />} />
+          </Route>
+
+          <Route element={<RequirePermission permission="canViewReports" />}>
+            <Route path="/reports" element={<Reports />} />
+          </Route>
+
+          {/* Administrator only permissions */}
+          <Route element={<RequirePermission permission="canViewSkillsCatalog" />}>
+            <Route path="/skills" element={<SkillList />} />
+          </Route>
+
+          <Route element={<RequirePermission permission="canViewDeptSkillMatrix" />}>
+            <Route path="/department-skill-matrix" element={<DepartmentSkillMatrix />} />
+          </Route>
+
+          <Route element={<RequirePermission permission="canManageUsers" />}>
+            <Route path="/user-management" element={<UserManagement />} />
+          </Route>
+
+          <Route element={<RequirePermission permission="canManageRoles" />}>
+            <Route path="/role-management" element={<RoleManagement />} />
+          </Route>
+
+          <Route element={<RequirePermission permission="canManageTraining" />}>
+            <Route path="/training-management" element={<TrainingManagement />} />
+          </Route>
+
+          <Route element={<RequirePermission permission="canViewAnalytics" />}>
+            <Route path="/analytics" element={<AnalyticsView />} />
+          </Route>
+
+          <Route element={<RequirePermission permission="canAccessSettings" />}>
+            <Route path="/system-settings" element={<SystemSettings />} />
+          </Route>
+
         </Route>
       </Route>
 

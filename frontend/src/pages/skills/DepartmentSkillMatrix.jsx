@@ -254,7 +254,7 @@ export default function DepartmentSkillMatrix() {
       {/* ── SECTION 1: INTERACTIVE SKILL HEATMAP ──────────────────────── */}
       <div className="space-y-6">
         <div>
-          <h1 className="page-header-title">Skill Competency Heatmap</h1>
+          <h1 className="page-header-title">Department Skill Heatmap &amp; Matrix</h1>
           <p className="page-header-subtitle">
             Visualizing department-wide skill proficiencies, skill gaps, and critical learning needs.
           </p>

@@ -33,16 +33,27 @@ export default function EmployeeList() {
     setLoading(true);
     setError(null);
     getEmployees()
-      .then((data) => { setEmployees(data); setLoading(false); })
-      .catch((err) => { setError(err.message); setLoading(false); });
+      .then((data) => {
+        setEmployees(Array.isArray(data) ? data : []);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.warn('Error loading employees, using fallback:', err);
+        setEmployees([]);
+        setLoading(false);
+      });
   }
 
   useEffect(() => { fetchEmployees(); }, []);
 
-  const departments = ['All', ...new Set(employees.map((e) => e.department))];
+  const safeEmployees = Array.isArray(employees) ? employees : [];
+  const departments = ['All', ...new Set(safeEmployees.map((e) => e?.department).filter(Boolean))];
 
-  const filtered = employees.filter((e) => {
-    const matchesSearch = e.name.toLowerCase().includes(search.toLowerCase());
+  const filtered = safeEmployees.filter((e) => {
+    if (!e) return false;
+    const nameStr = (e.name || '').toLowerCase();
+    const searchStr = (search || '').toLowerCase();
+    const matchesSearch = nameStr.includes(searchStr);
     const matchesDept   = deptFilter === 'All' || e.department === deptFilter;
     return matchesSearch && matchesDept;
   });

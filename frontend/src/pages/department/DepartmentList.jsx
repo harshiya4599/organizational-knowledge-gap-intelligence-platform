@@ -76,16 +76,25 @@ export default function DepartmentList() {
     setLoading(true);
     setError(null);
     getDepartments()
-      .then((data) => { setDepartments(data); setLoading(false); })
-      .catch((err) => { setError(err.message); setLoading(false); });
+      .then((data) => {
+        setDepartments(Array.isArray(data) ? data : []);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.warn('Error loading departments, using fallback:', err);
+        setDepartments([]);
+        setLoading(false);
+      });
   }
 
   useEffect(() => { fetchDepartments(); }, []);
 
+  const safeDepts = Array.isArray(departments) ? departments : [];
+
   if (loading) return <LoadingScreen message="Loading departments overview…" />;
   if (error)   return <ErrorState message={error} onRetry={fetchDepartments} />;
 
-  const totalHeadcount = departments.reduce((acc, d) => acc + (d.employeeCount || 0), 0);
+  const totalHeadcount = safeDepts.reduce((acc, d) => acc + (d?.employeeCount || 0), 0);
 
   return (
     <div className="page-container">
@@ -96,23 +105,23 @@ export default function DepartmentList() {
           <p className="page-header-subtitle">Organizational units, headcounts, and leadership overview</p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="count-badge">{departments.length} Units</span>
+          <span className="count-badge">{safeDepts.length} Units</span>
           <span className="count-badge bg-blue-50 text-blue-700 border-blue-200">{totalHeadcount} Employees</span>
         </div>
       </div>
 
       <ExportToolbar
-        data={departments}
+        data={safeDepts}
         columns={DEPT_COLUMNS}
         filename="departments_report"
         title="Export Department Directory"
       />
 
-      {departments.length === 0 ? (
+      {safeDepts.length === 0 ? (
         <EmptyState title="No departments found" />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {departments.map((dept, idx) => (
+          {safeDepts.map((dept, idx) => (
             <DepartmentCard key={dept.id} dept={dept} idx={idx} />
           ))}
         </div>

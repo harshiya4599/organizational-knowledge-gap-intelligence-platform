@@ -7,8 +7,8 @@ export default function Footer() {
         </p>
         <div className="flex items-center gap-4">
           <span className="inline-flex items-center gap-1.5 text-[10px] text-slate-400 font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
-            All Systems Operational
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block"></span>
+            v1.0.0 &middot; Platform Active
           </span>
         </div>
       </div>

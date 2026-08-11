@@ -1,572 +1,103 @@
 /**
  * recommendationService.js
- * Integrated with fetchWithFallback for AI Learning Recommendations & Personalized Learning Paths.
+ * Real backend API service for Recommendations and Learning Paths.
  */
 
 import api from './api';
 import { fetchWithFallback } from '../utils/apiFallback';
 
-const MOCK_RECOMMENDATIONS = [
-  {
-    id: 1,
-    employee: 'David Chen',
-    department: 'Engineering',
-    course: 'Docker & Kubernetes Fundamentals',
-    provider: 'Coursera',
-    score: 96,
-    priority: 'High',
-    duration: '4 weeks',
-    difficulty: 'Intermediate',
-    requiredSkills: ['Docker', 'Kubernetes'],
-    expectedImprovement: 'Docker Level 1 → Level 3 (+2 levels)',
-    reason: 'AI detected a critical containerisation gap impacting sprint delivery.',
-    status: 'Pending',
-  },
-  {
-    id: 2,
-    employee: 'David Chen',
-    department: 'Engineering',
-    course: 'React Advanced Patterns & Performance',
-    provider: 'Udemy',
-    score: 88,
-    priority: 'High',
-    duration: '5 weeks',
-    difficulty: 'Advanced',
-    requiredSkills: ['React', 'TypeScript'],
-    expectedImprovement: 'React Level 2 → Level 4 (+2 levels)',
-    reason: 'Senior developer role requires advanced state management and optimization techniques.',
-    status: 'Pending',
-  },
-  {
-    id: 3,
-    employee: 'Bob Martinez',
-    department: 'Data Science',
-    course: 'Applied Machine Learning with Python',
-    provider: 'Coursera',
-    score: 94,
-    priority: 'High',
-    duration: '6 weeks',
-    difficulty: 'Advanced',
-    requiredSkills: ['Python', 'Machine Learning'],
-    expectedImprovement: 'ML Level 2 → Level 4 (+2 levels)',
-    reason: 'Data Analyst transition to Senior ML Engineer requires supervised model tuning proficiency.',
-    status: 'Pending',
-  },
-  {
-    id: 4,
-    employee: 'Bob Martinez',
-    department: 'Data Science',
-    course: 'Power BI for Data Professionals',
-    provider: 'LinkedIn Learning',
-    score: 90,
-    priority: 'High',
-    duration: '3 weeks',
-    difficulty: 'Intermediate',
-    requiredSkills: ['Power BI', 'SQL'],
-    expectedImprovement: 'Power BI Level 1 → Level 3 (+2 levels)',
-    reason: 'Substantial gap identified in executive dashboard creation and DAX queries.',
-    status: 'Pending',
-  },
-  {
-    id: 5,
-    employee: 'Alice Johnson',
-    department: 'Engineering',
-    course: 'Advanced Microservices & Orchestration',
-    provider: 'Internal LMS',
-    score: 82,
-    priority: 'Medium',
-    duration: '3 weeks',
-    difficulty: 'Advanced',
-    requiredSkills: ['System Design', 'Docker'],
-    expectedImprovement: 'Docker Level 2 → Level 3 (+1 level)',
-    reason: 'Recommended for lead engineer track to standardize microservices deployment across teams.',
-    status: 'In Progress',
-  },
-  {
-    id: 6,
-    employee: 'Grace Kim',
-    department: 'Engineering',
-    course: 'TypeScript Deep Dive & Design Patterns',
-    provider: 'Udemy',
-    score: 79,
-    priority: 'Medium',
-    duration: '2 weeks',
-    difficulty: 'Intermediate',
-    requiredSkills: ['TypeScript'],
-    expectedImprovement: 'TypeScript Level 2 → Level 3 (+1 level)',
-    reason: 'Targeted course to ensure full type safety compliance across frontend modules.',
-    status: 'In Progress',
-  },
-  {
-    id: 7,
-    employee: 'Frank Thompson',
-    department: 'Finance',
-    course: 'Advanced Excel & Financial Modeling',
-    provider: 'LinkedIn Learning',
-    score: 76,
-    priority: 'Medium',
-    duration: '5 weeks',
-    difficulty: 'Advanced',
-    requiredSkills: ['Excel', 'Financial Modeling'],
-    expectedImprovement: 'Financial Modeling Level 3 → Level 4 (+1 level)',
-    reason: 'Essential for upcoming quarterly forecasting and scenario analysis models.',
-    status: 'Pending',
-  },
-  {
-    id: 8,
-    employee: 'Carol Williams',
-    department: 'Human Resources',
-    course: 'PMP Certification & Agile Project Management',
-    provider: 'Coursera',
-    score: 85,
-    priority: 'Medium',
-    duration: '8 weeks',
-    difficulty: 'Advanced',
-    requiredSkills: ['Project Management', 'Agile'],
-    expectedImprovement: 'Project Management Level 2 → Level 4 (+2 levels)',
-    reason: 'Fulfills requirement for managing organization-wide talent transformation initiatives.',
-    status: 'Pending',
-  },
-  {
-    id: 9,
-    employee: 'Eva Patel',
-    department: 'Marketing',
-    course: 'Technical SEO & Content Strategy 2026',
-    provider: 'Udemy',
-    score: 68,
-    priority: 'Low',
-    duration: '2 weeks',
-    difficulty: 'Beginner',
-    requiredSkills: ['SEO', 'Google Analytics'],
-    expectedImprovement: 'SEO Level 2 → Level 3 (+1 level)',
-    reason: 'Minor proficiency deficit in technical crawl audit techniques.',
-    status: 'Pending',
-  },
-  {
-    id: 10,
-    employee: 'Irene Lopez',
-    department: 'Operations',
-    course: 'Lean Six Sigma Green Belt',
-    provider: 'Internal LMS',
-    score: 91,
-    priority: 'High',
-    duration: '8 weeks',
-    difficulty: 'Advanced',
-    requiredSkills: ['Process Management', 'ERP'],
-    expectedImprovement: 'Process Management Level 2 → Level 4 (+2 levels)',
-    reason: 'Operational bottleneck analysis reveals critical need for process optimization methodology.',
-    status: 'Pending',
-  },
-  {
-    id: 11,
-    employee: 'James Wilson',
-    department: 'Marketing',
-    course: 'Digital Marketing Analytics & Attribution',
-    provider: 'LinkedIn Learning',
-    score: 62,
-    priority: 'Low',
-    duration: '2 weeks',
-    difficulty: 'Beginner',
-    requiredSkills: ['Brand Strategy', 'Analytics'],
-    expectedImprovement: 'Analytics Level 2 → Level 3 (+1 level)',
-    reason: 'Recommended for cross-functional alignment with digital performance teams.',
-    status: 'Completed',
-  },
-  {
-    id: 12,
-    employee: 'Sarah Jenkins',
-    department: 'Engineering',
-    course: 'Building Distributed Systems with Go',
-    provider: 'Coursera',
-    score: 95,
-    priority: 'High',
-    duration: '6 weeks',
-    difficulty: 'Advanced',
-    requiredSkills: ['Go', 'Microservices'],
-    expectedImprovement: 'Go Level 1 → Level 4 (+3 levels)',
-    reason: 'High-severity gap identified for cloud-native backend transition.',
-    status: 'Pending',
-  },
-];
+export function normalizeRecommendation(rec, idx) {
+  if (!rec) return null;
+  const scoreVal = typeof rec.score === 'number'
+    ? (rec.score <= 1 ? Math.round(rec.score * 100) : Math.round(rec.score))
+    : 75;
 
-const MOCK_LEARNING_PATHS = [
-  {
-    id: 101,
-    employee: 'David Chen',
-    department: 'Engineering',
-    currentLevel: 'Level 1 - Beginner',
-    targetLevel: 'Level 4 - Advanced',
-    estimatedTime: '12 weeks',
-    progress: 60,
-    status: 'In Progress',
-    difficulty: 'Advanced',
-    steps: [
-      {
-        stepNumber: 1,
-        title: 'Step 1: Foundation Course',
-        courseName: 'Container & Cloud Basics',
-        duration: '2 weeks',
-        status: 'Completed',
-        provider: 'Coursera',
-        description: 'Core concepts of Linux containers, Dockerfiles, and image building.',
-      },
-      {
-        stepNumber: 2,
-        title: 'Step 2: Intermediate Course',
-        courseName: 'Docker & Kubernetes Fundamentals',
-        duration: '4 weeks',
-        status: 'Completed',
-        provider: 'Coursera',
-        description: 'Multi-container orchestration, pod networking, and deployment manifests.',
-      },
-      {
-        stepNumber: 3,
-        title: 'Step 3: Hands-on Project',
-        courseName: 'Production Microservices Migration',
-        duration: '3 weeks',
-        status: 'In Progress',
-        provider: 'Internal LMS',
-        description: 'Migrating legacy monolith endpoints to containerized Helm charts.',
-      },
-      {
-        stepNumber: 4,
-        title: 'Step 4: Assessment / Certification',
-        courseName: 'CKAD (Certified Kubernetes Application Developer)',
-        duration: '2 weeks',
-        status: 'Pending',
-        provider: 'Linux Foundation',
-        description: 'Proctored practical exam validating cloud-native development.',
-      },
-      {
-        stepNumber: 5,
-        title: 'Step 5: Competency Achieved',
-        courseName: 'Senior DevOps & Cloud Developer Certification',
-        duration: '1 week',
-        status: 'Locked',
-        provider: 'Internal LMS',
-        description: 'Final peer review and sign-off into Level 4 Lead Developer role.',
-      },
-    ],
-  },
-  {
-    id: 102,
-    employee: 'Bob Martinez',
-    department: 'Data Science',
-    currentLevel: 'Level 2 - Basic',
-    targetLevel: 'Level 4 - Advanced',
-    estimatedTime: '10 weeks',
-    progress: 40,
-    status: 'In Progress',
-    difficulty: 'Advanced',
-    steps: [
-      {
-        stepNumber: 1,
-        title: 'Step 1: Foundation Course',
-        courseName: 'Python for Data Analysis & Pandas',
-        duration: '2 weeks',
-        status: 'Completed',
-        provider: 'Coursera',
-        description: 'Mastering NumPy, Pandas dataframes, and data cleaning pipelines.',
-      },
-      {
-        stepNumber: 2,
-        title: 'Step 2: Intermediate Course',
-        courseName: 'Applied Machine Learning & Scikit-Learn',
-        duration: '3 weeks',
-        status: 'In Progress',
-        provider: 'Coursera',
-        description: 'Supervised regression, classification models, and hyperparameter tuning.',
-      },
-      {
-        stepNumber: 3,
-        title: 'Step 3: Hands-on Project',
-        courseName: 'Customer Churn Predictive Pipeline',
-        duration: '2 weeks',
-        status: 'Pending',
-        provider: 'Internal LMS',
-        description: 'Building end-to-end ML training and evaluation pipeline on live DB.',
-      },
-      {
-        stepNumber: 4,
-        title: 'Step 4: Assessment / Certification',
-        courseName: 'TensorFlow Developer Certificate',
-        duration: '2 weeks',
-        status: 'Pending',
-        provider: 'Google Cloud',
-        description: 'Official certification testing deep neural network construction.',
-      },
-      {
-        stepNumber: 5,
-        title: 'Step 5: Competency Achieved',
-        courseName: 'Senior ML Analyst Competency',
-        duration: '1 week',
-        status: 'Locked',
-        provider: 'Internal LMS',
-        description: 'Executive panel evaluation for Senior Data Scientist role.',
-      },
-    ],
-  },
-  {
-    id: 103,
-    employee: 'Grace Kim',
-    department: 'Engineering',
-    currentLevel: 'Level 2 - Basic',
-    targetLevel: 'Level 3 - Intermediate',
-    estimatedTime: '6 weeks',
-    progress: 80,
-    status: 'In Progress',
-    difficulty: 'Intermediate',
-    steps: [
-      {
-        stepNumber: 1,
-        title: 'Step 1: Foundation Course',
-        courseName: 'TypeScript Fundamentals',
-        duration: '1 week',
-        status: 'Completed',
-        provider: 'Udemy',
-        description: 'Static typing basics, interfaces, generics, and compiler configuration.',
-      },
-      {
-        stepNumber: 2,
-        title: 'Step 2: Intermediate Course',
-        courseName: 'TypeScript Deep Dive & Design Patterns',
-        duration: '2 weeks',
-        status: 'Completed',
-        provider: 'Udemy',
-        description: 'Advanced mapped types, conditional types, and strict mode migration.',
-      },
-      {
-        stepNumber: 3,
-        title: 'Step 3: Hands-on Project',
-        courseName: 'React Component Library Type Safety Refactor',
-        duration: '1 week',
-        status: 'In Progress',
-        provider: 'Internal LMS',
-        description: 'Refactoring 30+ untyped JSX components to strict TypeScript.',
-      },
-      {
-        stepNumber: 4,
-        title: 'Step 4: Assessment / Certification',
-        courseName: 'Frontend Code Quality & Type Safety Audit',
-        duration: '1 week',
-        status: 'Pending',
-        provider: 'Internal LMS',
-        description: 'Peer code review and automated linting threshold verification.',
-      },
-      {
-        stepNumber: 5,
-        title: 'Step 5: Competency Achieved',
-        courseName: 'Level 3 Frontend Specialist',
-        duration: '1 week',
-        status: 'Locked',
-        provider: 'Internal LMS',
-        description: 'Level 3 designation granted upon successful code audit.',
-      },
-    ],
-  },
-  {
-    id: 104,
-    employee: 'Carol Williams',
-    department: 'Human Resources',
-    currentLevel: 'Level 2 - Basic',
-    targetLevel: 'Level 4 - Advanced',
-    estimatedTime: '14 weeks',
-    progress: 20,
-    status: 'In Progress',
-    difficulty: 'Advanced',
-    steps: [
-      {
-        stepNumber: 1,
-        title: 'Step 1: Foundation Course',
-        courseName: 'Agile & Scrum Fundamentals for Managers',
-        duration: '2 weeks',
-        status: 'Completed',
-        provider: 'Coursera',
-        description: 'Agile manifesto, sprint planning, and backlog refinement.',
-      },
-      {
-        stepNumber: 2,
-        title: 'Step 2: Intermediate Course',
-        courseName: 'PMP Certification & Project Leadership',
-        duration: '6 weeks',
-        status: 'In Progress',
-        provider: 'Coursera',
-        description: 'PMBOK guide, risk management, stakeholder management.',
-      },
-      {
-        stepNumber: 3,
-        title: 'Step 3: Hands-on Project',
-        courseName: 'HR Digital Transformation Rollout',
-        duration: '3 weeks',
-        status: 'Pending',
-        provider: 'Internal LMS',
-        description: 'Leading a cross-functional project to digitize onboarding.',
-      },
-      {
-        stepNumber: 4,
-        title: 'Step 4: Assessment / Certification',
-        courseName: 'PMP Proctored Exam',
-        duration: '2 weeks',
-        status: 'Pending',
-        provider: 'PMI',
-        description: 'Official PMI proctored certification exam.',
-      },
-      {
-        stepNumber: 5,
-        title: 'Step 5: Competency Achieved',
-        courseName: 'Senior HR Project Leader',
-        duration: '1 week',
-        status: 'Locked',
-        provider: 'Internal LMS',
-        description: 'Formal recognition as Senior HR Transformation Lead.',
-      },
-    ],
-  },
-  {
-    id: 105,
-    employee: 'James Wilson',
-    department: 'Marketing',
-    currentLevel: 'Level 2 - Basic',
-    targetLevel: 'Level 3 - Intermediate',
-    estimatedTime: '4 weeks',
-    progress: 100,
-    status: 'Completed',
-    difficulty: 'Beginner',
-    steps: [
-      {
-        stepNumber: 1,
-        title: 'Step 1: Foundation Course',
-        courseName: 'Marketing Analytics Overview',
-        duration: '1 week',
-        status: 'Completed',
-        provider: 'LinkedIn Learning',
-        description: 'Basic campaign metrics, CTR, conversion rates, and ROI.',
-      },
-      {
-        stepNumber: 2,
-        title: 'Step 2: Intermediate Course',
-        courseName: 'Digital Marketing Analytics & Attribution',
-        duration: '1 week',
-        status: 'Completed',
-        provider: 'LinkedIn Learning',
-        description: 'Multi-touch attribution models and channel performance.',
-      },
-      {
-        stepNumber: 3,
-        title: 'Step 3: Hands-on Project',
-        courseName: 'Q2 Campaign Attribution Report',
-        duration: '1 week',
-        status: 'Completed',
-        provider: 'Internal LMS',
-        description: 'Building live Google Analytics attribution model for Q2.',
-      },
-      {
-        stepNumber: 4,
-        title: 'Step 4: Assessment / Certification',
-        courseName: 'Google Analytics Individual Qualification',
-        duration: '1 week',
-        status: 'Completed',
-        provider: 'Google',
-        description: 'Official Google Analytics certification.',
-      },
-      {
-        stepNumber: 5,
-        title: 'Step 5: Competency Achieved',
-        courseName: 'Level 3 Marketing Analyst',
-        duration: '0 weeks',
-        status: 'Completed',
-        provider: 'Internal LMS',
-        description: 'Competency verified and signed off.',
-      },
-    ],
-  },
-];
-
-export function normalizeRecommendation(rec) {
   return {
-    id: rec.id,
-    employee: rec.employee || `Employee #${rec.employeeId || rec.id}`,
-    department: rec.department || rec.category || 'Engineering',
+    id: rec.id ?? (idx !== undefined ? idx + 1 : 1),
+    employeeId: rec.employeeId,
+    employee: rec.employee || (rec.employeeId ? `Employee #${rec.employeeId}` : 'Employee'),
+    department: rec.department || rec.category || 'General',
     course: rec.course || rec.title || 'Recommended Training Course',
-    provider: rec.provider || rec.type || 'Internal LMS',
-    score: typeof rec.score === 'number'
-      ? (rec.score <= 1 ? Math.round(rec.score * 100) : Math.round(rec.score))
-      : 85,
-    priority: rec.priority || (rec.score > 80 ? 'High' : rec.score > 50 ? 'Medium' : 'Low'),
+    provider: rec.provider || rec.type || 'Platform Training',
+    score: scoreVal,
+    priority: rec.priority || (scoreVal >= 85 ? 'High' : scoreVal >= 60 ? 'Medium' : 'Low'),
     duration: rec.duration || '4 weeks',
-    difficulty: rec.difficulty || 'Intermediate',
+    difficulty: rec.difficulty || rec.category || 'Intermediate',
     requiredSkills: Array.isArray(rec.requiredSkills)
       ? rec.requiredSkills
-      : rec.category ? [rec.category] : ['Core Skill'],
-    expectedImprovement: rec.expectedImprovement || 'Target competency (+1 to +2 levels)',
-    reason: rec.reason || `AI-driven recommendation based on identified skill gap in ${rec.title || 'assigned role'}.`,
+      : [rec.category || 'Core Competency'],
+    expectedImprovement: rec.expectedImprovement || 'Target competency growth',
+    reason: rec.reason || `AI-driven recommendation for ${rec.title || 'skill gap remediation'}.`,
     status: rec.status || 'Pending',
+    createdAt: rec.createdAt || '',
   };
 }
 
 export function normalizeSingleLearningPath(path) {
-  if (!path) return MOCK_LEARNING_PATHS[0];
-  if (path.steps && Array.isArray(path.steps) && path.employee) {
-    return path;
-  }
+  if (!path) return null;
+  const rawSteps = path.steps || [];
+  const steps = rawSteps.map((s, idx) => ({
+    stepNumber: s.stepNumber || idx + 1,
+    title: s.title || `Step ${s.stepNumber || idx + 1}: ${s.skillName || s.name || 'Skill Progression'}`,
+    courseName: s.courseName || s.skillName || s.name || 'Skill Learning Resource',
+    duration: s.duration || '2 weeks',
+    status: s.status || (idx === 0 ? 'In Progress' : 'Pending'),
+    provider: s.provider || (s.resources?.[0]?.type || 'Online Learning'),
+    description: s.description || (s.resources?.[0]?.title || `Develop competency in ${s.skillName || s.name}`),
+    currentLevel: s.currentLevel ?? 1,
+    targetLevel: s.targetLevel ?? 3,
+  }));
+
   return {
-    id: path.employeeId || 101,
-    employee: path.employee || `Employee #${path.employeeId || 1}`,
-    department: path.department || path.designation || 'Engineering',
-    currentLevel: path.currentLevel || 'Level 1 - Beginner',
-    targetLevel: path.targetLevel || 'Level 4 - Advanced',
-    estimatedTime: path.estimatedTime || '12 weeks',
-    progress: path.progress ?? 50,
+    id: path.id || path.employeeId || 1,
+    title: path.title || `${path.designation || 'Specialist'} Skill Roadmap`,
+    employee: path.employee || (path.employeeId ? `Employee #${path.employeeId}` : 'Employee'),
+    department: path.department || 'General',
+    currentLevel: path.currentLevel || 'Level 1',
+    targetLevel: path.targetLevel || 'Level 3',
+    estimatedTime: path.estimatedTime || `${steps.length * 2 || 4} weeks`,
+    progress: typeof path.progress === 'number' ? path.progress : 0,
     status: path.status || 'In Progress',
-    difficulty: path.difficulty || 'Advanced',
-    steps: Array.isArray(path.steps) ? path.steps.map((s, idx) => ({
-      stepNumber: s.stepNumber || idx + 1,
-      title: s.title || `Step ${s.stepNumber || idx + 1}: ${s.skillName || s.name || 'Skill Progression'}`,
-      courseName: s.courseName || s.skillName || s.name || 'Skill Learning Resource',
-      duration: s.duration || '2 weeks',
-      status: s.status || (idx === 0 ? 'Completed' : idx === 1 ? 'In Progress' : 'Pending'),
-      provider: s.provider || (s.resources?.[0]?.type || 'Coursera'),
-      description: s.description || (s.resources?.[0]?.title || `Develop competency in ${s.skillName || s.name}`),
-    })) : [],
+    difficulty: path.difficulty || 'Intermediate',
+    steps,
   };
 }
 
 export function normalizeLearningPaths(data) {
   if (Array.isArray(data)) {
-    return data.map(normalizeSingleLearningPath);
+    return data.map(normalizeSingleLearningPath).filter(Boolean);
   }
-  return [normalizeSingleLearningPath(data)];
+  if (data && typeof data === 'object') {
+    const single = normalizeSingleLearningPath(data);
+    return single ? [single] : [];
+  }
+  return [];
 }
 
 export function getRecommendations(employeeId) {
-  const endpoint = employeeId ? `/recommendations/${employeeId}` : '/recommendations/1';
-
+  const targetId = employeeId || 1;
   return fetchWithFallback({
-    request: () => api.get(endpoint),
-    mockData: MOCK_RECOMMENDATIONS,
+    request: () => api.get(`/recommendations/${targetId}`),
     normalize: normalizeRecommendation,
-    moduleName: 'AI Recommendations',
+    moduleName: 'Recommendations',
   });
 }
 
 export function getLearningPaths(employeeId) {
-  const endpoint = employeeId ? `/api/employees/${employeeId}/learning-path` : '/api/employees/1/learning-path';
-
+  const targetId = employeeId || 1;
   return fetchWithFallback({
-    request: () => api.get(endpoint),
-    mockData: MOCK_LEARNING_PATHS,
+    request: () => api.get(`/api/employees/${targetId}/learning-path`),
     normalize: normalizeLearningPaths,
-    moduleName: 'Personalized Learning Paths',
+    moduleName: 'Learning Paths',
   });
 }
 
 export async function generateRecommendations(employeeId) {
-  const res = await api.post('/recommendations/generate', { employeeId });
+  const res = await api.post('/recommendations/generate', { employeeId: Number(employeeId) });
   return res.data;
 }
 
 export async function refreshRecommendations(employeeId) {
-  const res = await api.post('/recommendations/refresh', { employeeId });
+  const res = await api.post('/recommendations/refresh', { employeeId: Number(employeeId) });
   return res.data;
 }
-
