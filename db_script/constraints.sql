@@ -16,17 +16,9 @@ ALTER TABLE departments
 ADD CONSTRAINT pk_departments
 PRIMARY KEY (department_id);
 
-ALTER TABLE employees
-ADD CONSTRAINT pk_employees
-PRIMARY KEY (employee_id);
-
 ALTER TABLE skills
 ADD CONSTRAINT pk_skills
 PRIMARY KEY (skill_id);
-
-ALTER TABLE employee_skills
-ADD CONSTRAINT pk_employee_skills
-PRIMARY KEY (employee_skill_id);
 
 ALTER TABLE department_competencies
 ADD CONSTRAINT pk_department_competencies
@@ -63,6 +55,10 @@ UNIQUE (skill_name);
 ALTER TABLE employee_skills
 ADD CONSTRAINT uq_employee_skill
 UNIQUE (employee_id, skill_id);
+
+ALTER TABLE employees
+ADD CONSTRAINT uq_employee_id_legacy
+UNIQUE (employee_id);
 
 -- ==========================================
 -- FOREIGN KEYS
@@ -113,7 +109,9 @@ ADD CONSTRAINT fk_training_gap
 FOREIGN KEY (gap_id)
 REFERENCES gap_analysis(gap_id);
 
---  constraints for the employees table:
+-- ==========================================
+-- NEW ENTITY CONSTRAINTS
+-- ==========================================
 ALTER TABLE organization.employees ALTER COLUMN employee_code SET NOT NULL;
 ALTER TABLE organization.employees ADD CONSTRAINT uq_employee_code UNIQUE (employee_code);
 
@@ -124,5 +122,4 @@ ALTER TABLE organization.employees ADD CONSTRAINT uq_employee_email UNIQUE (emai
 
 ALTER TABLE organization.employees ALTER COLUMN designation SET NOT NULL;
 
---  constraint for the employee_skills table:
 ALTER TABLE organization.employee_skills ADD CONSTRAINT chk_level CHECK (level >= 1 AND level <= 5);
