@@ -109,6 +109,10 @@ export default function EmployeeProfile() {
         designation: user.designation || '',
         location: user.location || '',
         avatarUrl: user.avatarUrl || '',
+        // These arrays are NOT persisted to the backend database.
+        // They are stored in localStorage only and will not survive browser data clearing.
+        // Backend support for skills-inventory, certifications, workExperience, and education
+        // endpoints is required for true persistence.
         skillsInventory: Array.isArray(user.skillsInventory) ? user.skillsInventory : prev.skillsInventory,
         certifications: Array.isArray(user.certifications) ? user.certifications : prev.certifications,
         workExperience: Array.isArray(user.workExperience) ? user.workExperience : prev.workExperience,
@@ -314,7 +318,10 @@ export default function EmployeeProfile() {
     showToast('Education record deleted');
   }
 
-  // Save Profile
+  // Save Profile — sends name/email/phone/department/designation/location/avatarUrl to backend.
+  // NOTE: skillsInventory, certifications, workExperience, and education are saved to localStorage only.
+  // These fields require dedicated backend endpoints (e.g., POST /employee-skills, POST /certifications)
+  // for true database persistence. Contact the backend team to add these endpoints.
   async function handleSaveProfile(e) {
     e.preventDefault();
     setSaving(true);
@@ -337,10 +344,11 @@ export default function EmployeeProfile() {
       });
 
       persistFullForm(updatedUser);
-      showToast('Profile & Skill Inventory saved persistently across sessions!');
+      showToast('Profile information saved successfully!');
       setEditMode(false);
     } catch (err) {
-      showToast(err.message || 'Failed to save profile.', 'error');
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to save profile. Please try again.';
+      showToast(errMsg, 'error');
     } finally {
       setSaving(false);
     }
@@ -370,13 +378,16 @@ export default function EmployeeProfile() {
     setPwSaving(true);
     try {
       await apiChangePassword(pwForm.currentPassword, pwForm.newPassword);
-      showToast('🔒 Account password updated successfully!');
+      showToast('🔒 Password updated successfully!');
       setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
       setPwErrors({});
     } catch (err) {
-      showToast('🔒 Account password updated successfully!');
-      setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      setPwErrors({});
+      // Show the actual error — never show success on failure
+      const errMsg = err?.response?.data?.message
+        || err?.response?.data
+        || err?.message
+        || 'Unable to update password. Please check your current password and try again.';
+      showToast(errMsg, 'error');
     } finally {
       setPwSaving(false);
     }

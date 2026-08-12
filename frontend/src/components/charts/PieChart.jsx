@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+const FALLBACK_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4'];
+
 /**
  * PieChart.jsx
  * SVG-based Doughnut / Pie Chart for Skill Distribution by Category.
@@ -7,12 +9,28 @@ import { useState } from 'react';
 export default function PieChart({ data = [], title = 'Skill Distribution by Category' }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
 
-  if (!data || data.length === 0) return null;
+  if (!Array.isArray(data) || data.length === 0) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 text-center text-xs text-slate-400">
+        No category distribution data available.
+      </div>
+    );
+  }
 
   const size = 180;
   const strokeWidth = 28;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
+
+  // Safe normalized items
+  const totalVal = data.reduce((acc, d) => acc + (d?.percentage ?? d?.value ?? 1), 0) || 100;
+  const normalizedItems = data.map((item, idx) => {
+    const rawPct = item?.percentage ?? (item?.value ? Math.round((item.value / totalVal) * 100) : 25);
+    const pct = typeof rawPct === 'number' && !isNaN(rawPct) ? Math.max(1, rawPct) : 25;
+    const cat = item?.category || item?.name || `Category ${idx + 1}`;
+    const col = item?.color || FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
+    return { category: cat, percentage: pct, color: col };
+  });
 
   let accumulatedPercent = 0;
 
@@ -24,7 +42,7 @@ export default function PieChart({ data = [], title = 'Skill Distribution by Cat
         {/* Doughnut SVG */}
         <div className="relative shrink-0 w-[180px] h-[180px]">
           <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-full transform -rotate-90">
-            {data.map((item, idx) => {
+            {normalizedItems.map((item, idx) => {
               const strokeDasharray = `${(item.percentage / 100) * circumference} ${circumference}`;
               const strokeDashoffset = -((accumulatedPercent / 100) * circumference);
               accumulatedPercent += item.percentage;
@@ -59,7 +77,7 @@ export default function PieChart({ data = [], title = 'Skill Distribution by Cat
 
         {/* Category Legend */}
         <div className="space-y-2 flex-1 w-full">
-          {data.map((item, idx) => {
+          {normalizedItems.map((item, idx) => {
             const isHovered = hoveredIdx === idx;
 
             return (

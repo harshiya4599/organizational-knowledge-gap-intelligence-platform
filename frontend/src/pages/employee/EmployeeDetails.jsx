@@ -32,7 +32,7 @@ export default function EmployeeDetails() {
   if (error)   return <ErrorState message={error} onRetry={fetchEmployee} />;
   if (!employee) return null;
 
-  const initials = employee.name
+  const initials = (employee.name || 'EM')
     .split(' ')
     .map(n => n[0])
     .join('')

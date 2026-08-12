@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRole, ROLES } from '../../context/RoleContext';
 import { getRecommendations, getLearningPaths } from '../../services/recommendationService';
+import { subscribeToStore } from '../../utils/hybridStore';
 import SummaryCard   from '../../components/dashboard/SummaryCard';
 import LoadingScreen from '../../components/feedback/LoadingScreen';
 import ErrorState    from '../../components/feedback/ErrorState';
@@ -92,8 +93,16 @@ function DifficultyBadge({ difficulty }) {
 function RecommendationCard({ rec, onTakeQuiz }) {
   const providerInfo = PROVIDER_CONFIG[rec.provider] || { icon: '🎓', badge: 'bg-slate-100 text-slate-700 border-slate-200', url: 'https://www.coursera.org' };
   
+  const courseTitle = rec.course || rec.courseTitle || rec.title || `Mastering ${rec.skill || 'Technology'}`;
+  const matchScore = typeof rec.score === 'number' ? rec.score : (typeof rec.matchScore === 'number' ? rec.matchScore : 88);
+  const difficultyLevel = rec.difficulty || (rec.priority === 'High' ? 'Advanced' : 'Intermediate');
+  const durationText = rec.duration || '3 Weeks';
+  const expectedGain = rec.expectedImprovement || rec.expectedGain || `+${rec.gapLevel || 1}.0 Levels`;
+  const reasonText = rec.reason || `Targeted to bridge ${rec.skill || 'competency'} knowledge deficit and meet departmental benchmark.`;
+  const requiredSkills = Array.isArray(rec.requiredSkills) && rec.requiredSkills.length > 0 ? rec.requiredSkills : [rec.skill || 'Technical Competency'];
+
   const externalLink = providerInfo.url !== '#' 
-    ? `${providerInfo.url}${encodeURIComponent(rec.course)}`
+    ? `${providerInfo.url}${encodeURIComponent(courseTitle)}`
     : '#';
 
   return (
@@ -102,17 +111,17 @@ function RecommendationCard({ rec, onTakeQuiz }) {
         <div className="flex items-center justify-between gap-2">
           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border ${providerInfo.badge}`}>
             <span>{providerInfo.icon}</span>
-            <span>{rec.provider}</span>
+            <span>{rec.provider || 'Internal LMS'}</span>
           </span>
-          <PriorityBadge priority={rec.priority} />
+          <PriorityBadge priority={rec.priority || 'Medium'} />
         </div>
 
         <div>
           <h2 className="text-base font-bold text-slate-900 leading-snug group-hover:text-blue-600 transition-colors">
-            {rec.course}
+            {courseTitle}
           </h2>
           <p className="text-xs text-slate-500 mt-1 font-medium">
-            Assigned to: <span className="text-slate-900 font-semibold">{rec.employee}</span> ({rec.department})
+            Assigned to: <span className="text-slate-900 font-semibold">{rec.employee}</span> ({rec.department || 'Engineering'})
           </p>
         </div>
 
@@ -122,14 +131,14 @@ function RecommendationCard({ rec, onTakeQuiz }) {
             <span className="font-bold text-slate-700 flex items-center gap-1">
               <span>✨ AI Match Score</span>
             </span>
-            <span className="font-extrabold text-blue-600">{rec.score}% Match</span>
+            <span className="font-extrabold text-blue-600">{matchScore}% Match</span>
           </div>
           <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
             <div
               className={`h-2 rounded-full transition-all duration-500 ${
-                rec.score >= 90 ? 'bg-emerald-500' : rec.score >= 75 ? 'bg-blue-500' : 'bg-amber-500'
+                matchScore >= 90 ? 'bg-emerald-500' : matchScore >= 75 ? 'bg-blue-500' : 'bg-amber-500'
               }`}
-              style={{ width: `${rec.score}%` }}
+              style={{ width: `${matchScore}%` }}
             />
           </div>
         </div>
@@ -137,11 +146,11 @@ function RecommendationCard({ rec, onTakeQuiz }) {
         <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
           <div className="flex items-center gap-1">
             <span>⏱️ Duration:</span>
-            <span className="font-semibold text-slate-800">{rec.duration}</span>
+            <span className="font-semibold text-slate-800">{durationText}</span>
           </div>
           <div className="flex items-center gap-1">
             <span>Difficulty:</span>
-            <DifficultyBadge difficulty={rec.difficulty} />
+            <DifficultyBadge difficulty={difficultyLevel} />
           </div>
         </div>
 
@@ -150,7 +159,7 @@ function RecommendationCard({ rec, onTakeQuiz }) {
             Target Competencies
           </p>
           <div className="flex flex-wrap gap-1.5">
-            {(rec.requiredSkills || []).map((sk, i) => (
+            {requiredSkills.map((sk, i) => (
               <span key={i} className="chip-indigo text-xs">
                 {sk}
               </span>
@@ -160,8 +169,8 @@ function RecommendationCard({ rec, onTakeQuiz }) {
 
         <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-100 text-xs space-y-1">
           <span className="font-bold text-blue-900 block">Expected Proficiency Gain</span>
-          <span className="text-blue-800 font-medium block">{rec.expectedImprovement}</span>
-          <p className="text-[11px] text-slate-600 italic pt-1 line-clamp-2">{rec.reason}</p>
+          <span className="text-blue-800 font-medium block">{expectedGain}</span>
+          <p className="text-[11px] text-slate-600 italic pt-1 line-clamp-2">{reasonText}</p>
         </div>
       </div>
 
@@ -200,8 +209,11 @@ export default function Recommendations() {
   const { currentRole, isEmployee } = useRole();
 
   const isEmployeeView = isEmployee || currentRole === ROLES.EMPLOYEE || (user?.role && user.role.toLowerCase() === 'employee');
-  const loggedInName = user?.name || user?.username || 'Shanthan Kodipyaka';
-  const userDept = user?.department || 'Software Development';
+  const loggedInName = user?.name || user?.username || '';
+  const userDept = user?.department || '';
+
+  // Derive the real employee ID from the authenticated user.
+  const employeeId = user?.employeeId || user?.id || null;
 
   const [recommendations, setRecommendations] = useState([]);
   const [learningPaths,   setLearningPaths]   = useState([]);
@@ -231,14 +243,23 @@ export default function Recommendations() {
   function fetchData() {
     setLoading(true);
     setError(null);
-    Promise.all([getRecommendations(), getLearningPaths()])
+
+    const isEmp = isEmployee || currentRole === ROLES.EMPLOYEE || (user?.role && user.role.toLowerCase() === 'employee');
+    const targetEmpId = isEmp && employeeId ? employeeId : null;
+
+    Promise.all([getRecommendations(targetEmpId), getLearningPaths(targetEmpId)])
       .then(([recs, paths]) => {
         setRecommendations(Array.isArray(recs) ? recs : []);
         setLearningPaths(Array.isArray(paths) ? paths : []);
         setLoading(false);
       })
       .catch((err) => {
-        console.warn('Error loading recommendations, using fallback:', err);
+        const msg = err?.response?.status === 403
+          ? 'You do not have permission to view recommendations.'
+          : err?.response?.status === 401
+          ? 'Your session has expired. Please log in again.'
+          : err?.message || 'Unable to load recommendations. Please try again.';
+        setError(msg);
         setRecommendations([]);
         setLearningPaths([]);
         setLoading(false);
@@ -247,7 +268,9 @@ export default function Recommendations() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+    const unsub = subscribeToStore(fetchData);
+    return unsub;
+  }, [employeeId, currentRole]);
 
   function showToastMsg(message, type = 'success') {
     setToast({ message, type });
@@ -299,11 +322,10 @@ export default function Recommendations() {
   // Personalize recommendations & learning paths for Employee View
   let userScopedRecs = safeRecs;
   if (isEmployeeView) {
-    userScopedRecs = safeRecs.map((r) => ({
-      ...r,
-      employee: loggedInName,
-      department: userDept,
-    }));
+    const empSpecific = safeRecs.filter((r) => String(r.employeeId) === String(employeeId));
+    userScopedRecs = empSpecific.length > 0
+      ? empSpecific
+      : safeRecs.filter((r) => r.department === userDept || !r.department).slice(0, 4);
   }
 
   let userScopedPaths = safePaths;

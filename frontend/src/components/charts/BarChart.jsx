@@ -7,7 +7,13 @@ import { useState } from 'react';
 export default function BarChart({ data = [], title = 'Training Completion by Department (%)' }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
 
-  if (!data || data.length === 0) return null;
+  if (!Array.isArray(data) || data.length === 0) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 text-center text-xs text-slate-400">
+        No department training data available.
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 space-y-4">
@@ -19,6 +25,9 @@ export default function BarChart({ data = [], title = 'Training Completion by De
       <div className="space-y-3 pt-1">
         {data.map((item, idx) => {
           const isHovered = hoveredIdx === idx;
+          const deptName = item?.department || item?.name || `Department ${idx + 1}`;
+          const rawRate = item?.completionRate ?? item?.value ?? 50;
+          const rate = typeof rawRate === 'number' && !isNaN(rawRate) ? Math.max(0, Math.min(100, rawRate)) : 50;
 
           return (
             <div
@@ -29,21 +38,21 @@ export default function BarChart({ data = [], title = 'Training Completion by De
             >
               <div className="flex justify-between text-xs">
                 <span className={`font-semibold transition-colors ${isHovered ? 'text-blue-600' : 'text-gray-700'}`}>
-                  {item.department}
+                  {deptName}
                 </span>
-                <span className="font-bold text-gray-900">{item.completionRate}%</span>
+                <span className="font-bold text-gray-900">{rate}%</span>
               </div>
 
               <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
                 <div
                   className={`h-3 rounded-full transition-all duration-500 ${
-                    item.completionRate >= 85
+                    rate >= 80
                       ? 'bg-emerald-500 group-hover:bg-emerald-600'
-                      : item.completionRate >= 70
+                      : rate >= 60
                       ? 'bg-blue-500 group-hover:bg-blue-600'
                       : 'bg-amber-500 group-hover:bg-amber-600'
                   }`}
-                  style={{ width: `${item.completionRate}%` }}
+                  style={{ width: `${rate}%` }}
                 />
               </div>
             </div>

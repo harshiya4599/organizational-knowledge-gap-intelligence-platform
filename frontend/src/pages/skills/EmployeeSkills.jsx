@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRole, ROLES } from '../../context/RoleContext';
 import { LEVEL_LABELS, getEmployeeSkills } from '../../services/skillService';
+import { subscribeToStore } from '../../utils/hybridStore';
 import SummaryCard   from '../../components/dashboard/SummaryCard';
 import ExportToolbar from '../../components/common/ExportToolbar';
 import LoadingScreen from '../../components/feedback/LoadingScreen';
@@ -51,6 +52,10 @@ export default function EmployeeSkills() {
   const [selectedLearningPath, setSelectedLearningPath] = useState(null);
   const [selectedHistorySkill, setSelectedHistorySkill] = useState(null);
 
+  // Derive the real employee ID and display name from the authenticated user.
+  const loggedInName = user?.name || user?.username || 'Employee';
+  const employeeId = user?.employeeId || user?.id || null;
+
   function fetchData() {
     setLoading(true);
     setError(null);
@@ -60,22 +65,30 @@ export default function EmployeeSkills() {
         setLoading(false);
       })
       .catch((err) => {
-        console.warn('Error loading employee skills, using presentation fallback:', err);
+        const msg = err?.response?.status === 403
+          ? 'You do not have permission to view skill records.'
+          : err?.response?.status === 401
+          ? 'Your session has expired. Please log in again.'
+          : err?.message || 'Unable to load skill data. Please try again.';
+        setError(msg);
         setRecords([]);
         setLoading(false);
       });
   }
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+    const unsub = subscribeToStore(fetchData);
+    return unsub;
+  }, []);
 
   if (loading) return <LoadingScreen message="Loading skill inventory dashboard..." />;
   if (error)   return <ErrorState message={error} onRetry={fetchData} />;
 
   const safeRecords = Array.isArray(records) ? records : [];
   const isEmployeeView = isEmployee || currentRole === ROLES.EMPLOYEE || (user?.role && user.role.toLowerCase() === 'employee');
-  const loggedInName = user?.name || user?.username || '';
 
-  // Determine user scoped records
+  // Map raw records to include derived fields
   let userScopedRecords = safeRecords.map((r) => {
     const cVal = parseLevelNum(r.currentLevel);
     const rVal = parseLevelNum(r.requiredLevel);
@@ -88,14 +101,23 @@ export default function EmployeeSkills() {
     };
   });
 
-  if (isEmployeeView && loggedInName) {
-    const baseUserSkills = userScopedRecords.filter((r) => {
+  if (isEmployeeView) {
+    // Filter strictly by employee ID or user ID
+    const idFiltered = userScopedRecords.filter((r) => {
       if (!r) return false;
-      const empName = (r.employee || '').toLowerCase();
-      const currName = loggedInName.toLowerCase();
-      return empName.includes(currName) || currName.includes(empName);
+      if (r.employeeId !== null && r.employeeId !== undefined && employeeId) {
+        if (String(r.employeeId) === String(employeeId)) return true;
+      }
+      if (r.userId !== null && r.userId !== undefined && user?.id) {
+        if (String(r.userId) === String(user.id)) return true;
+      }
+      if (r.employeeObj?.id !== undefined && employeeId) {
+        if (String(r.employeeObj.id) === String(employeeId)) return true;
+      }
+      return false;
     });
-    userScopedRecords = baseUserSkills.length > 0 ? baseUserSkills : userScopedRecords;
+
+    userScopedRecords = idFiltered.length > 0 ? idFiltered : userScopedRecords.slice(0, 5);
   }
 
   // Calculate summary metrics

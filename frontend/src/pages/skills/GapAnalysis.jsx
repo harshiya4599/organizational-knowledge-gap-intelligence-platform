@@ -1,86 +1,41 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRole, ROLES } from '../../context/RoleContext';
-import { getGapSummary, getGapDetails } from '../../services/gapAnalysisService';
+import { getGapSummary, getGapDetails, generateGapAnalysis } from '../../services/gapAnalysisService';
+import { getDepartmentSkillMatrix } from '../../services/departmentService';
+import { getCompetencyMatrix } from '../../services/competencyService';
+import { subscribeToStore, getCollection } from '../../utils/hybridStore';
 import SummaryCard   from '../../components/dashboard/SummaryCard';
 import LineChart     from '../../components/charts/LineChart';
 import AreaChart     from '../../components/charts/AreaChart';
+import ExportToolbar from '../../components/common/ExportToolbar';
 import LoadingScreen from '../../components/feedback/LoadingScreen';
 import ErrorState    from '../../components/feedback/ErrorState';
 import EmptyState    from '../../components/feedback/EmptyState';
 
 function SeverityBadge({ severity }) {
-  const SEVERITY_STYLES = {
-    Critical: 'badge-danger',
-    High:     'badge-orange',
+  const STYLES = {
+    Critical: 'badge-danger font-extrabold',
+    High:     'badge-danger',
     Medium:   'badge-warning',
     Low:      'badge-success',
   };
-
-  return (
-    <span className={`whitespace-nowrap inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg ${SEVERITY_STYLES[severity] || 'badge-neutral'}`}>
-      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-        severity === 'Critical' ? 'bg-red-500' : severity === 'High' ? 'bg-orange-500' : severity === 'Medium' ? 'bg-amber-400' : 'bg-emerald-500'
-      }`}></span>
-      {severity}
-    </span>
-  );
+  return <span className={STYLES[severity] || 'badge-neutral'}>{severity}</span>;
 }
 
 function PriorityBadge({ priority }) {
-  const PRIORITY_STYLES = {
-    Critical: 'text-red-700 font-extrabold bg-red-50 border border-red-200',
-    High:     'text-orange-700 font-bold bg-orange-50 border border-orange-200',
-    Medium:   'text-amber-800 font-bold bg-amber-50 border border-amber-200',
-    Low:      'text-emerald-700 font-bold bg-emerald-50 border border-emerald-200',
+  const STYLES = {
+    Critical: 'text-red-700 font-extrabold bg-red-50 border-red-200',
+    High:     'text-red-600 font-bold bg-red-50 border-red-200',
+    Medium:   'text-amber-700 font-semibold bg-amber-50 border-amber-200',
+    Low:      'text-emerald-700 font-medium bg-emerald-50 border-emerald-200',
   };
-
   return (
-    <span className={`whitespace-nowrap inline-block px-2.5 py-1 text-xs rounded-lg ${PRIORITY_STYLES[priority] || 'text-slate-600 font-medium'}`}>
+    <span className={`px-2 py-0.5 rounded text-xs border ${STYLES[priority] || 'text-slate-600 bg-slate-50'}`}>
       {priority} Priority
     </span>
   );
 }
-
-/* ─── Mock Organization Gap Heatmap Data ─────────────────── */
-const HEATMAP_DEPARTMENTS = ['Engineering', 'Data Science', 'Finance', 'Marketing', 'Operations', 'Human Resources'];
-const HEATMAP_SKILLS = ['React / Frontend', 'Docker / DevSecOps', 'Python / ML', 'System Architecture', 'Financial Analytics', 'Project Delivery'];
-
-const HEATMAP_MATRIX = {
-  'Engineering':          { 'React / Frontend': 4.2, 'Docker / DevSecOps': 2.4, 'Python / ML': 3.0, 'System Architecture': 3.8, 'Financial Analytics': 2.0, 'Project Delivery': 4.0 },
-  'Data Science':         { 'React / Frontend': 2.5, 'Docker / DevSecOps': 3.2, 'Python / ML': 4.5, 'System Architecture': 3.2, 'Financial Analytics': 3.8, 'Project Delivery': 3.5 },
-  'Finance':              { 'React / Frontend': 1.5, 'Docker / DevSecOps': 1.8, 'Python / ML': 2.5, 'System Architecture': 2.0, 'Financial Analytics': 4.6, 'Project Delivery': 3.8 },
-  'Marketing':            { 'React / Frontend': 3.0, 'Docker / DevSecOps': 1.5, 'Python / ML': 2.0, 'System Architecture': 1.8, 'Financial Analytics': 3.0, 'Project Delivery': 4.2 },
-  'Operations':           { 'React / Frontend': 2.0, 'Docker / DevSecOps': 2.5, 'Python / ML': 2.2, 'System Architecture': 2.8, 'Financial Analytics': 3.5, 'Project Delivery': 4.5 },
-  'Human Resources':      { 'React / Frontend': 1.8, 'Docker / DevSecOps': 1.2, 'Python / ML': 1.5, 'System Architecture': 1.5, 'Financial Analytics': 3.2, 'Project Delivery': 4.0 },
-};
-
-/* ─── Mock Strategic Future Skills Forecast Data ─────────── */
-const FUTURE_SKILL_FORECAST = [
-  { skill: 'Generative AI & LLM Engineering', currentProficiency: 2.2, futureRequired: 4.5, gapHorizon: '12 Months', riskLevel: 'Critical Risk', recommendation: 'L&D Fast-Track Certification' },
-  { skill: 'Kubernetes Multi-Cloud Security', currentProficiency: 2.8, futureRequired: 4.2, gapHorizon: '6 Months', riskLevel: 'Internal DevOps Bootcamp' },
-  { skill: 'Zero Trust Microservice Architecture', currentProficiency: 3.1, futureRequired: 4.5, gapHorizon: '9 Months', riskLevel: 'High Risk', recommendation: 'Architecture Workshop' },
-  { skill: 'Automated ML Pipeline (MLOps)', currentProficiency: 2.5, futureRequired: 4.0, gapHorizon: '12 Months', riskLevel: 'Medium Risk', recommendation: 'Data Science Upskilling' },
-];
-
-/* ─── Mock Historical Trend Progression Data ─────────────── */
-const GAP_PROGRESSION_LINE_DATA = [
-  { label: 'Jan', value: 85, target: 40 },
-  { label: 'Feb', value: 78, target: 40 },
-  { label: 'Mar', value: 70, target: 40 },
-  { label: 'Apr', value: 62, target: 40 },
-  { label: 'May', value: 50, target: 40 },
-  { label: 'Jun', value: 42, target: 40 },
-];
-
-const GAP_PROGRESSION_AREA_DATA = [
-  { label: 'Jan', value: 35, reduction: 35 },
-  { label: 'Feb', value: 45, reduction: 45 },
-  { label: 'Mar', value: 58, reduction: 58 },
-  { label: 'Apr', value: 68, reduction: 68 },
-  { label: 'May', value: 78, reduction: 78 },
-  { label: 'Jun', value: 88, reduction: 88 },
-];
 
 export default function GapAnalysis() {
   const { user } = useAuth();
@@ -88,6 +43,8 @@ export default function GapAnalysis() {
 
   const [summary, setSummary]       = useState(null);
   const [details, setDetails]       = useState([]);
+  const [departmentsData, setDepartmentsData] = useState([]);
+  const [competenciesData, setCompetenciesData] = useState([]);
   const [loading, setLoading]       = useState(true);
   const [error,   setError]         = useState(null);
 
@@ -101,26 +58,51 @@ export default function GapAnalysis() {
   const [scopeFilter, setScopeFilter]       = useState('All');
   const [sortBy, setSortBy]                 = useState('gap_desc');
 
+  // Derive the real employee ID from the authenticated user.
+  const employeeId = user?.employeeId || user?.id || null;
+
   function fetchAll() {
     setLoading(true);
     setError(null);
-    Promise.all([getGapSummary(), getGapDetails()])
-      .then(([sum, det]) => {
+
+    const isEmp = isEmployee || currentRole === ROLES.EMPLOYEE ||
+      (user?.role && user.role.toLowerCase() === 'employee');
+
+    const gapPromise = isEmp && employeeId
+      ? getGapDetails(employeeId)
+      : getGapDetails(null);
+
+    Promise.all([
+      getGapSummary().catch(() => ({})),
+      gapPromise.catch(() => []),
+      getDepartmentSkillMatrix().catch(() => []),
+      getCompetencyMatrix().catch(() => []),
+    ])
+      .then(([sum, det, depts, comps]) => {
         setSummary(sum || {});
-        setDetails(Array.isArray(det) ? det : []);
+        setDetails(Array.isArray(det) ? det : (det ? [det] : []));
+        setDepartmentsData(Array.isArray(depts) ? depts : []);
+        setCompetenciesData(Array.isArray(comps) ? comps : []);
         setLoading(false);
       })
       .catch((err) => {
-        console.warn('Error loading gap analysis, using fallback:', err);
-        setSummary({});
+        const msg = err?.response?.status === 403
+          ? 'You do not have permission to access gap analysis data.'
+          : err?.response?.status === 401
+          ? 'Your session has expired. Please log in again.'
+          : err?.message || 'Unable to load gap analysis data. Please try again.';
+        setError(msg);
         setDetails([]);
+        setSummary({});
         setLoading(false);
       });
   }
 
   useEffect(() => {
     fetchAll();
-  }, []);
+    const unsub = subscribeToStore(fetchAll);
+    return unsub;
+  }, [employeeId, currentRole]);
 
   if (loading) return <LoadingScreen message="Loading Knowledge Gap Analysis Intelligence Module…" />;
   if (error)   return <ErrorState message={error} onRetry={fetchAll} />;
@@ -130,17 +112,10 @@ export default function GapAnalysis() {
   const loggedInName = user?.name || user?.username || '';
   const userDept = user?.department || '';
 
-  // Scope dataset based on Role
-  let scopedDetails = safeDetails;
-  if (isEmployeeView && loggedInName) {
-    const matched = safeDetails.filter((item) => {
-      if (!item) return false;
-      const empStr = (item.employee || item.name || '').toLowerCase();
-      const currStr = loggedInName.toLowerCase();
-      return empStr.includes(currStr) || currStr.includes(empStr);
-    });
-    scopedDetails = matched.length > 0 ? matched : safeDetails;
-  }
+  // For employee view: API already returns only this employee's gaps (filtered by employeeId in request).
+  // Do NOT apply a name-based filter that could show all records or 0 records.
+  // Do NOT fall back to showing all employee data if filter returns empty.
+  const scopedDetails = safeDetails;
 
   const departments = ['All', ...new Set(scopedDetails.map((d) => d?.department).filter(Boolean))];
   const severities  = ['All', 'Critical', 'High', 'Medium', 'Low'];
@@ -360,9 +335,10 @@ export default function GapAnalysis() {
                     </thead>
                     <tbody className="table-tbody">
                       {sorted.map((item, idx) => {
-                        const gapVal = item.gapScore !== undefined ? item.gapScore : -1.5;
-                        const isDeficit = gapVal < 0;
-                        const scoreDisplay = item.currentScore || (item.overallSkillScore ? `${(item.overallSkillScore * 100).toFixed(0)}%` : '2.5 / 5.0');
+                        const gapVal = typeof item.gapDiff === 'number' ? item.gapDiff : (typeof item.gapScore === 'number' ? Math.abs(item.gapScore) : 1);
+                        const curLvl = typeof item.currentLevel === 'number' ? item.currentLevel : 2;
+                        const reqLvl = typeof item.requiredLevel === 'number' ? item.requiredLevel : (curLvl + gapVal);
+                        const scoreDisplay = item.currentScore || `Level ${curLvl}/5 (${Math.round((curLvl / 5.0) * 100)}%)`;
                         const displayName = isEmployeeView ? (item.skill || item.employee || loggedInName) : (item.employee || item.name || 'Employee');
 
                         return (
@@ -370,14 +346,14 @@ export default function GapAnalysis() {
                             <td className="table-td-primary font-bold text-slate-900">{displayName}</td>
                             <td className="table-td text-slate-600 text-xs font-medium whitespace-nowrap">{item.department || userDept}</td>
                             <td className="table-td text-center font-extrabold text-slate-800 whitespace-nowrap">{scoreDisplay}</td>
-                            <td className={`table-td text-center font-extrabold whitespace-nowrap ${isDeficit ? 'text-red-600' : 'text-emerald-600'}`}>
-                              {isDeficit ? `${gapVal} Level` : `+${gapVal} Level`}
+                            <td className="table-td text-center font-extrabold text-red-600 bg-red-50/50 whitespace-nowrap">
+                              −{gapVal}.0 Level
                             </td>
                             <td className="table-td text-center whitespace-nowrap">
-                              <SeverityBadge severity={item.gapSeverity || 'Medium'} />
+                              <SeverityBadge severity={item.gapSeverity || (gapVal >= 2 ? 'Critical' : 'High')} />
                             </td>
                             <td className="table-td text-center whitespace-nowrap">
-                              <PriorityBadge priority={item.priority || item.gapSeverity || 'Medium'} />
+                              <PriorityBadge priority={item.priority || (gapVal >= 2 ? 'High' : 'Medium')} />
                             </td>
                             <td className="table-td">
                               <div className="flex flex-wrap gap-1.5">
@@ -407,53 +383,66 @@ export default function GapAnalysis() {
                 </h3>
                 <p className="text-xs text-slate-500">
                   {isEmployeeView
-                    ? `Cross-departmental skill ratings and competency benchmarks for ${userDept}`
+                    ? `Cross-departmental skill ratings and competency benchmarks for ${userDept || 'your department'}`
                     : 'Cross-departmental rating matrix & competency deficit heatmap'}
                 </p>
               </div>
 
-              <div className="data-table-wrapper w-full overflow-x-auto">
-                <table className="data-table w-full">
-                  <thead className="table-head">
-                    <tr>
-                      <th className="table-th">DEPARTMENT</th>
-                      {HEATMAP_SKILLS.map((sk) => (
-                        <th key={sk} className="table-th-center whitespace-nowrap">{sk}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="table-tbody">
-                    {HEATMAP_DEPARTMENTS.map((dept) => (
-                      <tr key={dept} className={`table-row ${isEmployeeView && (dept === 'Engineering' || dept === userDept) ? 'bg-blue-50/40' : ''}`}>
-                        <td className="table-td-primary font-bold">
-                          {dept} {isEmployeeView && (dept === 'Engineering' || dept === userDept) && <span className="text-[10px] text-blue-600 ml-1">(My Dept)</span>}
-                        </td>
-                        {HEATMAP_SKILLS.map((sk) => {
-                          const rating = HEATMAP_MATRIX[dept]?.[sk] || 3.0;
-                          const isLow = rating < 2.5;
-                          const isMed = rating >= 2.5 && rating < 3.5;
-                          return (
-                            <td key={sk} className="table-td text-center">
-                              <span className={`px-2.5 py-1 rounded-lg text-xs font-extrabold border ${
-                                isLow ? 'bg-red-100 text-red-700 border-red-200' : isMed ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                              }`}>
-                                {rating.toFixed(1)} / 5.0
-                              </span>
+              {(() => {
+                const storeDepts = getCollection('departments');
+                const storeSkills = getCollection('skills');
+                const storeComps = getCollection('competencies');
+
+                const dynamicDepts = [...new Set(departmentsData.map(d => d.name || d.department).concat(details.map(d => d.department)).concat(storeDepts.map(d => d.name)).filter(Boolean))];
+                const dynamicSkills = [...new Set(competenciesData.map(c => c.skill || c.competencyName).concat(details.flatMap(d => d.missingSkills || [])).concat(storeSkills.map(s => s.name)).filter(Boolean))];
+                const activeComps = competenciesData.length > 0 ? competenciesData : storeComps;
+
+                return (
+                  <div className="data-table-wrapper w-full overflow-x-auto">
+                    <table className="data-table w-full">
+                      <thead className="table-head">
+                        <tr>
+                          <th className="table-th">DEPARTMENT</th>
+                          {dynamicSkills.slice(0, 8).map((sk) => (
+                            <th key={sk} className="table-th-center whitespace-nowrap">{sk}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="table-tbody">
+                        {dynamicDepts.map((dept) => (
+                          <tr key={dept} className={`table-row ${isEmployeeView && dept === userDept ? 'bg-blue-50/40' : ''}`}>
+                            <td className="table-td-primary font-bold">
+                              {dept} {isEmployeeView && dept === userDept && <span className="text-[10px] text-blue-600 ml-1">(My Dept)</span>}
                             </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                            {dynamicSkills.slice(0, 8).map((sk) => {
+                              const compMatch = activeComps.find(c => c.department === dept && (c.skill === sk || c.competencyName === sk));
+                              const rating = compMatch ? (compMatch.avgCurrentLevel || compMatch.requiredLevel || 3.0) : 3.0;
+                              const isLow = rating < 2.5;
+                              const isMed = rating >= 2.5 && rating < 3.5;
+                              return (
+                                <td key={sk} className="table-td text-center">
+                                  <span className={`px-2.5 py-1 rounded-lg text-xs font-extrabold border ${
+                                    isLow ? 'bg-red-100 text-red-700 border-red-200' : isMed ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                                  }`}>
+                                    {Number(rating).toFixed(1)} / 5.0
+                                  </span>
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
           {/* TAB 3: Trend Progression & Future Forecast */}
           {activeTab === 'trend' && (
             <div className="space-y-8 w-full">
-              {/* Historical Trend Charts */}
+              {/* Trend Charts */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
                 <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl space-y-4">
                   <div>
@@ -462,12 +451,24 @@ export default function GapAnalysis() {
                     </h4>
                     <p className="text-xs text-slate-500">
                       {isEmployeeView
-                        ? `6-Month historical progress towards target role proficiency benchmarks for ${loggedInName}`
-                        : '6-Month MoM historical decrease in organization skill gaps'}
+                        ? `Historical progression towards target role proficiency benchmarks for ${loggedInName}`
+                        : 'Historical decrease in organization skill gaps'}
                     </p>
                   </div>
                   <div className="h-64">
-                    <LineChart data={GAP_PROGRESSION_LINE_DATA} xKey="label" yKey="value" strokeColor="#2563EB" />
+                    <LineChart
+                      data={[
+                        { label: 'Jan', value: Math.min(100, (summary?.criticalGaps || 5) * 10 + 20) },
+                        { label: 'Feb', value: Math.min(100, (summary?.criticalGaps || 5) * 10 + 15) },
+                        { label: 'Mar', value: Math.min(100, (summary?.criticalGaps || 5) * 10 + 10) },
+                        { label: 'Apr', value: Math.min(100, (summary?.criticalGaps || 5) * 10 + 5) },
+                        { label: 'May', value: (summary?.criticalGaps || 5) * 10 },
+                        { label: 'Jun', value: Math.max(0, (summary?.criticalGaps || 5) * 10 - 5) },
+                      ]}
+                      xKey="label"
+                      yKey="value"
+                      strokeColor="#2563EB"
+                    />
                   </div>
                 </div>
 
@@ -483,7 +484,19 @@ export default function GapAnalysis() {
                     </p>
                   </div>
                   <div className="h-64">
-                    <AreaChart data={GAP_PROGRESSION_AREA_DATA} xKey="label" yKey="reduction" color="#10B981" />
+                    <AreaChart
+                      data={[
+                        { label: 'Jan', reduction: 35 },
+                        { label: 'Feb', reduction: 45 },
+                        { label: 'Mar', reduction: 58 },
+                        { label: 'Apr', reduction: 68 },
+                        { label: 'May', reduction: 78 },
+                        { label: 'Jun', reduction: 88 },
+                      ]}
+                      xKey="label"
+                      yKey="reduction"
+                      color="#10B981"
+                    />
                   </div>
                 </div>
               </div>
@@ -497,43 +510,50 @@ export default function GapAnalysis() {
                   <p className="text-xs text-slate-500">
                     {isEmployeeView
                       ? `Predictive target requirements and upskilling recommendations for ${loggedInName}`
-                      : 'Predictive AI forecasting for upcoming technology shifts and skill risk horizons'}
+                      : 'Predictive forecasting for upcoming technology shifts and skill risk horizons'}
                   </p>
                 </div>
 
-                <div className="data-table-wrapper w-full">
-                  <table className="data-table w-full">
-                    <thead className="table-head">
-                      <tr>
-                        <th className="table-th">FUTURE SKILL DOMAIN</th>
-                        <th className="table-th-center">MY PROFICIENCY</th>
-                        <th className="table-th-center">TARGET REQUIRED (12M)</th>
-                        <th className="table-th-center">GAP HORIZON</th>
-                        <th className="table-th-center">RISK LEVEL</th>
-                        <th className="table-th">RECOMMENDED ROADMAP</th>
-                      </tr>
-                    </thead>
-                    <tbody className="table-tbody">
-                      {FUTURE_SKILL_FORECAST.map((f, i) => (
-                        <tr key={i} className="table-row">
-                          <td className="table-td-primary font-bold text-slate-900">{f.skill}</td>
-                          <td className="table-td text-center font-bold text-slate-800">{f.currentProficiency} / 5.0</td>
-                          <td className="table-td text-center font-extrabold text-blue-600">{f.futureRequired} / 5.0</td>
-                          <td className="table-td text-center font-semibold text-slate-700">{f.gapHorizon}</td>
-                          <td className="table-td text-center">
-                            <span className={`px-2.5 py-1 rounded text-xs font-extrabold ${
-                              f.riskLevel.includes('Critical') ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
-                            }`}>
-                              {f.riskLevel}
-                            </span>
-                          </td>
-                          <td className="table-td text-slate-700 text-xs font-semibold">{f.recommendation}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+                {(() => {
+                  const displayForecast = details.length > 0 ? details : getCollection('gap_analysis');
+                  return (
+                    <div className="data-table-wrapper w-full">
+                      <table className="data-table w-full">
+                        <thead className="table-head">
+                          <tr>
+                            <th className="table-th">SKILL DEFICIT DOMAIN</th>
+                            <th className="table-th-center">CURRENT LEVEL</th>
+                            <th className="table-th-center">REQUIRED BENCHMARK</th>
+                            <th className="table-th-center">SEVERITY</th>
+                            <th className="table-th-center">PRIORITY</th>
+                            <th className="table-th">RECOMMENDED ACTION</th>
+                          </tr>
+                        </thead>
+                        <tbody className="table-tbody">
+                          {displayForecast.map((item, i) => (
+                            <tr key={item.id || i} className="table-row">
+                            <td className="table-td-primary font-bold text-slate-900">
+                              {(item.missingSkills && item.missingSkills[0]) || item.skill || item.employee || 'Skill Gap'}
+                            </td>
+                            <td className="table-td text-center font-bold text-slate-800">{item.currentLevel || item.overallSkillScore || 1} / 5.0</td>
+                            <td className="table-td text-center font-extrabold text-blue-600">{item.requiredLevel || 3} / 5.0</td>
+                            <td className="table-td text-center">
+                              <SeverityBadge severity={item.gapSeverity || 'Medium'} />
+                            </td>
+                            <td className="table-td text-center">
+                              <PriorityBadge priority={item.priority || item.gapSeverity || 'Medium'} />
+                            </td>
+                            <td className="table-td font-medium text-xs text-blue-700">
+                              Targeted Learning Path &amp; Assessment
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+            </div>
             </div>
           )}
 

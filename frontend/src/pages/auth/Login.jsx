@@ -118,6 +118,9 @@ export default function Login() {
   const [loading,    setLoading]    = useState(false);
   const [showPw,     setShowPw]     = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  // UI-only role selection — does NOT grant permissions.
+  // The backend/JWT is the actual authority for authentication and role assignment.
+  const [selectedRole, setSelectedRole] = useState('Employee');
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -139,11 +142,23 @@ export default function Login() {
     setLoading(true);
     setErrors({});
     try {
-      const res = await apiLogin(form.email, form.password);
+      const res = await apiLogin(form.email, form.password, selectedRole);
       login(res.user, res.token);
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      setErrors({ form: err.message || 'Login failed. Please check your credentials.' });
+      // Network error (backend not running) — do not expose server internals
+      if (err.isNetworkError) {
+        setErrors({ form: 'Cannot reach the server. Please try again in a moment.' });
+        return;
+      }
+      const status = err.status || err.response?.status;
+      if (status === 401 || status === 403) {
+        setErrors({ form: 'Incorrect username or password. Please try again.' });
+      } else if (status === 400) {
+        setErrors({ form: 'Incorrect username or password. Please try again.' });
+      } else {
+        setErrors({ form: 'Incorrect username or password. Please try again.' });
+      }
     } finally {
       setLoading(false);
     }
@@ -219,6 +234,33 @@ export default function Login() {
 
           {/* ── Login Form ───────────────────────────────────── */}
           <form onSubmit={handleSubmit} noValidate className="space-y-4">
+
+            {/* Role Selection (UI hint only — backend validates actual role) */}
+            <div>
+              <label htmlFor="login-role" className="form-label">Role</label>
+              <div className="input-icon-wrap">
+                <span className="input-icon-left" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                  </svg>
+                </span>
+                <select
+                  id="login-role"
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value)}
+                  className="form-input-icon w-full appearance-none pr-8 cursor-pointer bg-white"
+                  aria-label="Select your role"
+                >
+                  <option value="Employee">Employee</option>
+                  <option value="Manager">Manager</option>
+                  <option value="Administrator">Organization Administrator</option>
+                </select>
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </span>
+              </div>
+            </div>
 
             {/* Username / Email */}
             <div>

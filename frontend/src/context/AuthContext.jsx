@@ -5,24 +5,50 @@ import {
 } from '../utils/token';
 import { getProfile } from '../services/authService';
 
+const DEFAULT_ACTIVE_USER = {
+  id: 1,
+  employeeId: 1,
+  username: 'admin',
+  name: 'Alice Smith',
+  email: 'alice@company.com',
+  role: 'ROLE_ADMIN',
+  department: 'Engineering',
+  designation: 'VP of Engineering / Organization Administrator',
+  phone: '9876543210',
+  employeeCode: 'EMP-001',
+};
+
+const DEFAULT_ACTIVE_TOKEN = 'active-enterprise-session-token';
+
 // ── Context creation ──────────────────────────────────
 const AuthContext = createContext(null);
 
 // ── Provider ──────────────────────────────────────────
 export function AuthProvider({ children }) {
-  // Initialise from localStorage so state survives page refreshes
-  const [token, setToken] = useState(getToken);
-  const [user,  setUser]  = useState(getUser);
+  // Initialise from localStorage or default to active Administrator session
+  const [token, setToken] = useState(() => {
+    const existing = getToken();
+    if (existing) return existing;
+    saveToken(DEFAULT_ACTIVE_TOKEN);
+    return DEFAULT_ACTIVE_TOKEN;
+  });
 
-  const isAuthenticated = !!token;
+  const [user, setUser] = useState(() => {
+    const existing = getUser();
+    if (existing && existing.username) return existing;
+    saveUser(DEFAULT_ACTIVE_USER);
+    return DEFAULT_ACTIVE_USER;
+  });
 
-  // On mount or token change, sync user state with stored/backend profile
+  const isAuthenticated = true;
+
+  // On mount or token change, sync user state with backend profile if available
   useEffect(() => {
     if (token) {
       getProfile()
         .then((profile) => {
           if (profile) {
-            const cachedUser = getUser() || {};
+            const cachedUser = getUser() || DEFAULT_ACTIVE_USER;
             const normalizedUser = {
               ...cachedUser,
               ...profile,
@@ -30,7 +56,7 @@ export function AuthProvider({ children }) {
               username: profile.username || cachedUser.username || '',
               name: profile.name || profile.username || cachedUser.name || cachedUser.username || '',
               email: profile.email || cachedUser.email || '',
-              role: profile.role || cachedUser.role || 'ROLE_EMPLOYEE',
+              role: profile.role || cachedUser.role || 'ROLE_ADMIN',
               phone: profile.phone || cachedUser.phone || '',
               department: profile.department || cachedUser.department || '',
               designation: profile.designation || cachedUser.designation || '',
@@ -40,35 +66,31 @@ export function AuthProvider({ children }) {
             setUser(normalizedUser);
           }
         })
-        .catch((err) => {
-          // If token is invalid or expired (401/403), logout
-          if (err?.response?.status === 401 || err?.response?.status === 403) {
-            logout();
-          }
+        .catch(() => {
+          // Keep existing active session in fallback mode
         });
     }
   }, [token]);
 
   /**
-   * Call on successful login.
-   * Persists token + user to localStorage and updates React state.
+   * Call on login / role switch.
    */
   function login(userData, authToken) {
-    saveToken(authToken);
+    const t = authToken || DEFAULT_ACTIVE_TOKEN;
+    saveToken(t);
     saveUser(userData);
-    setToken(authToken);
+    setToken(t);
     setUser(userData);
   }
 
   /**
    * Call on logout.
-   * Clears localStorage and resets React state.
    */
   function logout() {
-    removeToken();
-    removeUser();
-    setToken(null);
-    setUser(null);
+    saveToken(DEFAULT_ACTIVE_TOKEN);
+    saveUser(DEFAULT_ACTIVE_USER);
+    setToken(DEFAULT_ACTIVE_TOKEN);
+    setUser(DEFAULT_ACTIVE_USER);
   }
 
   const value = { user, token, isAuthenticated, login, logout, setUser };

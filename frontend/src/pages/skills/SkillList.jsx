@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { getSkills, LEVEL_LABELS } from '../../services/skillService';
+import { subscribeToStore, getCollection } from '../../utils/hybridStore';
 import ExportToolbar from '../../components/common/ExportToolbar';
 import LoadingScreen from '../../components/feedback/LoadingScreen';
 import ErrorState    from '../../components/feedback/ErrorState';
 import EmptyState    from '../../components/feedback/EmptyState';
 
-const CATEGORIES = ['All', 'Technical', 'Data Science', 'Soft Skills', 'Management', 'Finance', 'Marketing'];
+const CATEGORIES = ['All', 'Technical', 'DevOps', 'Leadership', 'Management', 'Finance', 'Security'];
 
 const LEVEL_BADGE = {
   1: 'badge-neutral',
@@ -34,17 +35,23 @@ export default function SkillList() {
     setError(null);
     getSkills()
       .then((data) => {
-        setSkills(Array.isArray(data) ? data : []);
+        const list = Array.isArray(data) && data.length > 0 ? data : getCollection('skills');
+        setSkills(list);
         setLoading(false);
       })
       .catch((err) => {
-        console.warn('Error loading skills, using presentation fallback:', err);
-        setSkills([]);
+        console.warn('[SkillList] Backend failed, loading from hybridStore:', err);
+        const fallback = getCollection('skills');
+        setSkills(fallback);
         setLoading(false);
       });
   }
 
-  useEffect(() => { fetchSkills(); }, []);
+  useEffect(() => {
+    fetchSkills();
+    const unsub = subscribeToStore(fetchSkills);
+    return unsub;
+  }, []);
 
   const safeSkillsList = Array.isArray(skills) ? skills : [];
 
@@ -105,7 +112,10 @@ export default function SkillList() {
 
       {/* ── Table ────────────────────────────────────── */}
       {filtered.length === 0 ? (
-        <EmptyState title="No skills found" message="Adjust your search or category filter." />
+        <EmptyState
+          title="No skills found"
+          message={safeSkillsList.length === 0 ? "No skills have been registered in the database yet." : "Adjust your search or category filter."}
+        />
       ) : (
         <div className="data-table-wrapper">
           <div className="overflow-x-auto">

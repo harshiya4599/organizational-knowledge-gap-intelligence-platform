@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getDepartments } from '../../services/departmentService';
+import { subscribeToStore, getCollection } from '../../utils/hybridStore';
 import ExportToolbar from '../../components/common/ExportToolbar';
 import LoadingScreen from '../../components/feedback/LoadingScreen';
 import ErrorState    from '../../components/feedback/ErrorState';
@@ -8,7 +9,7 @@ import EmptyState    from '../../components/feedback/EmptyState';
 const DEPT_COLUMNS = [
   { label: 'Department Name', key: 'name' },
   { label: 'Description',     key: 'description' },
-  { label: 'Manager',         key: 'manager' },
+  { label: 'Department Head', key: 'head' },
   { label: 'Employee Count',  key: 'employeeCount' },
 ];
 
@@ -23,6 +24,7 @@ const DEPT_ACCENTS = [
 
 function DepartmentCard({ dept, idx }) {
   const accent = DEPT_ACCENTS[idx % DEPT_ACCENTS.length];
+  const headName = dept.head || dept.manager?.name || dept.manager || 'Department Lead';
 
   return (
     <div className="panel card-hover flex flex-col overflow-hidden group">
@@ -43,7 +45,7 @@ function DepartmentCard({ dept, idx }) {
               <p className="text-xs text-slate-400 mt-0.5 font-medium">Organizational Unit</p>
             </div>
           </div>
-          <span className={`${accent.badge} text-[11px]`}>Active</span>
+          <span className={`${accent.badge} text-[11px]`}>{dept.status || 'Active'}</span>
         </div>
 
         <p className="text-xs text-slate-500 line-clamp-2 mb-5 leading-relaxed">
@@ -53,13 +55,13 @@ function DepartmentCard({ dept, idx }) {
         {/* Stats Grid */}
         <div className="mt-auto pt-4 border-t border-slate-100 grid grid-cols-2 gap-3 text-xs">
           <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Manager</span>
-            <span className="font-semibold text-slate-800 truncate block">{dept.manager}</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Department Head</span>
+            <span className="font-semibold text-slate-800 truncate block">{headName}</span>
           </div>
 
           <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Team Size</span>
-            <span className="font-extrabold text-blue-600 text-sm block">{dept.employeeCount} members</span>
+            <span className="font-extrabold text-blue-600 text-sm block">{dept.employeeCount || 2} members</span>
           </div>
         </div>
       </div>
@@ -77,52 +79,61 @@ export default function DepartmentList() {
     setError(null);
     getDepartments()
       .then((data) => {
-        setDepartments(Array.isArray(data) ? data : []);
+        const safeData = Array.isArray(data) && data.length > 0 ? data : getCollection('departments');
+        setDepartments(safeData);
         setLoading(false);
       })
       .catch((err) => {
-        console.warn('Error loading departments, using fallback:', err);
-        setDepartments([]);
+        console.warn('[DepartmentList] Backend failed, loading from hybridStore:', err);
+        const fallback = getCollection('departments');
+        setDepartments(fallback);
         setLoading(false);
       });
   }
 
-  useEffect(() => { fetchDepartments(); }, []);
+  useEffect(() => {
+    fetchDepartments();
+    const unsub = subscribeToStore(fetchDepartments);
+    return unsub;
+  }, []);
 
   const safeDepts = Array.isArray(departments) ? departments : [];
 
   if (loading) return <LoadingScreen message="Loading departments overview…" />;
-  if (error)   return <ErrorState message={error} onRetry={fetchDepartments} />;
+  if (error && safeDepts.length === 0) return <ErrorState message={error} onRetry={fetchDepartments} />;
 
   const totalHeadcount = safeDepts.reduce((acc, d) => acc + (d?.employeeCount || 0), 0);
 
   return (
     <div className="page-container">
-      {/* ── Page Header ─────────────────────────────────── */}
-      <div className="page-header-row">
+      {/* Header Row */}
+      <div className="page-header-row mb-6">
         <div>
-          <h1 className="page-header-title">Department Management</h1>
-          <p className="page-header-subtitle">Organizational units, headcounts, and leadership overview</p>
+          <div className="flex items-center gap-2">
+            <h1 className="page-header-title">Departments Overview</h1>
+            <span className="count-badge text-xs">{safeDepts.length} Departments</span>
+          </div>
+          <p className="page-header-subtitle">
+            Organizational divisions, headcounts, and leadership structure across {totalHeadcount} employees.
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="count-badge">{safeDepts.length} Units</span>
-          <span className="count-badge bg-blue-50 text-blue-700 border-blue-200">{totalHeadcount} Employees</span>
-        </div>
+
+        <ExportToolbar
+          data={safeDepts}
+          columns={DEPT_COLUMNS}
+          filename="Organizational_Departments"
+        />
       </div>
 
-      <ExportToolbar
-        data={safeDepts}
-        columns={DEPT_COLUMNS}
-        filename="departments_report"
-        title="Export Department Directory"
-      />
-
       {safeDepts.length === 0 ? (
-        <EmptyState title="No departments found" />
+        <EmptyState
+          title="No Departments Found"
+          message="There are currently no active organizational departments registered in the system."
+        />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {safeDepts.map((dept, idx) => (
-            <DepartmentCard key={dept.id} dept={dept} idx={idx} />
+            <DepartmentCard key={dept.id || idx} dept={dept} idx={idx} />
           ))}
         </div>
       )}

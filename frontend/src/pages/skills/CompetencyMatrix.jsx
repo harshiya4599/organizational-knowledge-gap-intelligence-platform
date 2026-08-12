@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRole, ROLES } from '../../context/RoleContext';
-import { getCompetencyMatrix } from '../../services/competencyService';
+import { getCompetencyMatrix, updateCompetency } from '../../services/competencyService';
+import { subscribeToStore } from '../../utils/hybridStore';
 import LoadingScreen from '../../components/feedback/LoadingScreen';
 import ErrorState    from '../../components/feedback/ErrorState';
 import EmptyState    from '../../components/feedback/EmptyState';
@@ -14,7 +15,7 @@ const STATUS_BADGE = {
 };
 
 const DEPT_OPTIONS = [
-  'All', 'Engineering', 'Software Development', 'Data Science', 'Marketing', 'Finance', 'Human Resources', 'Operations',
+  'All', 'Engineering', 'Data Science', 'Marketing', 'Finance', 'Human Resources', 'Operations',
 ];
 
 const PROFICIENCY_LEVELS = {
@@ -144,13 +145,22 @@ export default function CompetencyMatrix() {
         setLoading(false);
       })
       .catch((err) => {
-        console.warn('Error loading competency matrix, using fallback:', err);
+        const msg = err?.response?.status === 403
+          ? 'You do not have permission to view the competency matrix.'
+          : err?.response?.status === 401
+          ? 'Your session has expired. Please log in again.'
+          : err?.message || 'Unable to load competency matrix. Please try again.';
+        setError(msg);
         setMatrix([]);
         setLoading(false);
       });
   }
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+    const unsub = subscribeToStore(fetchData);
+    return unsub;
+  }, []);
 
   function showToastMsg(message, type = 'success') {
     setToast({ message, type });
@@ -162,23 +172,39 @@ export default function CompetencyMatrix() {
   const filtered = safeMatrix.filter((row) => {
     if (!row) return false;
     const skillName = row.skill || row.skillName || row.name || '';
-    const matchDept =
-      deptFilter === 'All' ||
-      row.department === deptFilter ||
-      (deptFilter === 'Software Development' && row.department === 'Engineering') ||
-      (deptFilter === 'Engineering' && row.department === 'Software Development');
+    const matchDept = deptFilter === 'All' || row.department === deptFilter;
     const matchStatus = statusFilter === 'All' || row.status === statusFilter;
     const matchSearch = search === '' || skillName.toLowerCase().includes(search.toLowerCase()) || (row.department || '').toLowerCase().includes(search.toLowerCase());
     return matchDept && matchStatus && matchSearch;
   });
 
-  function handleTargetLevelChange(rowId, newLvl) {
+  async function handleTargetLevelChange(rowId, newLvl) {
     if (isEmployeeView) return; // Prevent employee edits
+    const prevLvl = targetLevels[rowId];
     setTargetLevels((prev) => ({
       ...prev,
       [rowId]: Number(newLvl),
     }));
-    showToastMsg('Target competency level updated!');
+
+    const targetRow = safeMatrix.find((r) => r.id === rowId);
+    if (targetRow && typeof updateCompetency === 'function') {
+      try {
+        await updateCompetency(rowId, {
+          ...targetRow,
+          requiredLevel: Number(newLvl),
+        });
+        showToastMsg('Target competency benchmark updated and persisted to database!');
+        fetchData();
+      } catch (err) {
+        setTargetLevels((prev) => ({
+          ...prev,
+          [rowId]: prevLvl,
+        }));
+        showToastMsg(err?.message || 'Failed to persist competency update to backend.', 'error');
+      }
+    } else {
+      showToastMsg('Target competency level updated!');
+    }
   }
 
   if (loading) return <LoadingScreen message="Loading Competency Framework &amp; Benchmarks…" />;

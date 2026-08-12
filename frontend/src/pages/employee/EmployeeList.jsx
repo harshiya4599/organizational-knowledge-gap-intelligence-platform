@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getEmployees } from '../../services/employeeService';
+import { subscribeToStore, getCollection } from '../../utils/hybridStore';
 import ExportToolbar from '../../components/common/ExportToolbar';
 import LoadingScreen from '../../components/feedback/LoadingScreen';
 import ErrorState    from '../../components/feedback/ErrorState';
@@ -34,17 +35,23 @@ export default function EmployeeList() {
     setError(null);
     getEmployees()
       .then((data) => {
-        setEmployees(Array.isArray(data) ? data : []);
+        const list = Array.isArray(data) && data.length > 0 ? data : getCollection('employees');
+        setEmployees(list);
         setLoading(false);
       })
       .catch((err) => {
-        console.warn('Error loading employees, using fallback:', err);
-        setEmployees([]);
+        console.warn('[EmployeeList] Backend failed, loading from hybridStore:', err);
+        const fallback = getCollection('employees');
+        setEmployees(fallback);
         setLoading(false);
       });
   }
 
-  useEffect(() => { fetchEmployees(); }, []);
+  useEffect(() => {
+    fetchEmployees();
+    const unsub = subscribeToStore(fetchEmployees);
+    return unsub;
+  }, []);
 
   const safeEmployees = Array.isArray(employees) ? employees : [];
   const departments = ['All', ...new Set(safeEmployees.map((e) => e?.department).filter(Boolean))];
@@ -112,7 +119,7 @@ export default function EmployeeList() {
       {filtered.length === 0 ? (
         <EmptyState
           title="No employees found"
-          message="Try adjusting your search or department filter."
+          message={employees.length === 0 ? "No employee records exist in the database yet." : "Try adjusting your search or department filter."}
         />
       ) : (
         <div className="data-table-wrapper">
@@ -132,7 +139,7 @@ export default function EmployeeList() {
                       <div className="flex items-center gap-3">
                         {/* Avatar */}
                         <div className="avatar-sm text-[10px] shrink-0">
-                          {emp.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                          {(emp.name || 'EM').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                         </div>
                         <div>
                           <p className="font-semibold text-slate-800 text-sm">{emp.name}</p>
@@ -160,7 +167,7 @@ export default function EmployeeList() {
                         View Details
                         <svg className="w-3 h-3 transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                           <line x1="5" y1="12" x2="19" y2="12"/>
-                          <polyline points="12 5 19 12 12 19"/>
+                          <polyline points="12 19 5 12 12 5"/>
                         </svg>
                       </Link>
                     </td>

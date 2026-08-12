@@ -3,12 +3,12 @@ import React from 'react';
 /**
  * ErrorBoundary
  * Catches any unexpected JS rendering errors in child components
- * and renders a clean, professional error view instead of a blank white screen.
+ * and renders a clean error view with diagnostic information.
  */
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, errorInfo: null };
   }
 
   static getDerivedStateFromError(error) {
@@ -17,10 +17,11 @@ export default class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('[ErrorBoundary caught error]:', error, errorInfo);
+    this.setState({ errorInfo });
   }
 
   handleReload = () => {
-    this.setState({ hasError: false, error: null });
+    this.setState({ hasError: false, error: null, errorInfo: null });
     window.location.reload();
   };
 
@@ -35,6 +36,17 @@ export default class ErrorBoundary extends React.Component {
           <p className="text-sm text-slate-500 max-w-md mb-6 leading-relaxed">
             The requested module experienced a temporary rendering issue. Click below to refresh and reload presentation data.
           </p>
+
+          {/* Diagnostic Error Details */}
+          {this.state.error && (
+            <div className="w-full text-left bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6 text-xs text-slate-700 font-mono overflow-x-auto max-h-48">
+              <p className="font-bold text-red-600 mb-1">{this.state.error?.toString()}</p>
+              {this.state.errorInfo?.componentStack && (
+                <pre className="text-[10px] text-slate-500 whitespace-pre-wrap">{this.state.errorInfo.componentStack}</pre>
+              )}
+            </div>
+          )}
+
           <div className="flex items-center gap-3">
             <button
               type="button"

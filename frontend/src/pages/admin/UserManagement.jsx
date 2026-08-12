@@ -1,20 +1,51 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRole } from '../../context/RoleContext';
-
-const INITIAL_USERS = [
-  { id: 1, name: 'Rohith N', email: 'admin@company.com', role: 'Administrator', status: 'Active', department: 'Executive Management', lastActive: '2 mins ago' },
-  { id: 2, name: 'Department Lead', email: 'manager@company.com', role: 'Manager', status: 'Active', department: 'Engineering', lastActive: '10 mins ago' },
-  { id: 3, name: 'Senior Specialist', email: 'employee@company.com', role: 'Employee', status: 'Active', department: 'Software Development', lastActive: '1 hour ago' },
-  { id: 4, name: 'David Chen', email: 'david.chen@company.com', role: 'Employee', status: 'Active', department: 'Engineering', lastActive: '3 hours ago' },
-  { id: 5, name: 'Alice Johnson', email: 'alice.j@company.com', role: 'Manager', status: 'Active', department: 'Data Science', lastActive: 'Yesterday' },
-];
+import { getUsers, addUser } from '../../services/userService';
+import { subscribeToStore, getCollection } from '../../utils/hybridStore';
+import LoadingScreen from '../../components/feedback/LoadingScreen';
+import ErrorState    from '../../components/feedback/ErrorState';
+import EmptyState    from '../../components/feedback/EmptyState';
 
 export default function UserManagement() {
   const { roleBadge } = useRole();
-  const [users] = useState(INITIAL_USERS);
-  const [search, setSearch] = useState('');
+  const [users, setUsers]     = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState(null);
+  const [search, setSearch]   = useState('');
 
-  const filtered = users.filter(u => u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()));
+  function fetchUsers() {
+    setLoading(true);
+    setError(null);
+    getUsers()
+      .then((data) => {
+        const list = Array.isArray(data) && data.length > 0 ? data : getCollection('users');
+        setUsers(list);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.warn('[UserManagement] Backend failed, loading from hybridStore:', err);
+        const fallback = getCollection('users');
+        setUsers(fallback);
+        setLoading(false);
+      });
+  }
+
+  useEffect(() => {
+    fetchUsers();
+    const unsub = subscribeToStore(fetchUsers);
+    return unsub;
+  }, []);
+
+  const safeUsers = Array.isArray(users) ? users : [];
+
+  if (loading) return <LoadingScreen message="Loading user accounts…" />;
+  if (error && safeUsers.length === 0) return <ErrorState message={error} onRetry={fetchUsers} />;
+
+  const filtered = safeUsers.filter((u) =>
+    (u.name || '').toLowerCase().includes(search.toLowerCase()) ||
+    (u.email || '').toLowerCase().includes(search.toLowerCase()) ||
+    (u.username || '').toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="page-container space-y-6">
@@ -26,61 +57,63 @@ export default function UserManagement() {
           </div>
           <p className="page-header-subtitle">Manage user accounts, assign system access levels, and monitor user statuses</p>
         </div>
-        <button type="button" className="btn-primary text-xs flex items-center gap-2">
-          <span>+</span> Add New User
-        </button>
       </div>
 
-      <div className="filter-bar flex items-center justify-between gap-4">
-        <div className="search-input-wrapper flex-1 max-w-sm">
-          <svg className="search-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input
-            type="text"
-            placeholder="Search users by name or email..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="search-input"
-          />
+      <div className="panel p-4 flex items-center justify-between gap-4">
+        <input
+          type="text"
+          placeholder="Search by name, email, or username…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="form-input max-w-sm text-xs"
+        />
+        <span className="count-badge text-xs px-3 py-1 font-semibold">{filtered.length} Users</span>
+      </div>
+
+      {filtered.length === 0 ? (
+        <EmptyState title="No Users Found" message="No user accounts match your search query." />
+      ) : (
+        <div className="panel p-0 overflow-hidden">
+          <div className="data-table-wrapper w-full overflow-x-auto">
+            <table className="data-table w-full">
+              <thead className="table-head">
+                <tr>
+                  <th className="table-th">User Profile</th>
+                  <th className="table-th">Username</th>
+                  <th className="table-th">Email</th>
+                  <th className="table-th">Department</th>
+                  <th className="table-th">System Role</th>
+                  <th className="table-th">Account Status</th>
+                  <th className="table-th-center">Last Active</th>
+                </tr>
+              </thead>
+              <tbody className="table-tbody">
+                {filtered.map((u) => (
+                  <tr key={u.id} className="table-row">
+                    <td className="table-td-primary font-bold text-slate-900">{u.name}</td>
+                    <td className="table-td text-xs font-mono text-slate-700">{u.username}</td>
+                    <td className="table-td text-xs text-slate-600">{u.email}</td>
+                    <td className="table-td text-slate-800">{u.department}</td>
+                    <td className="table-td">
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                        u.role.includes('ADMIN') ? 'bg-purple-100 text-purple-800 border border-purple-200' :
+                        u.role.includes('MANAGER') ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                        'bg-slate-100 text-slate-800 border border-slate-200'
+                      }`}>
+                        {u.roleDisplay || u.role}
+                      </span>
+                    </td>
+                    <td className="table-td">
+                      <span className="badge-success text-xs">Active</span>
+                    </td>
+                    <td className="table-td text-center text-xs text-slate-500">{u.lastActive || 'Just now'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-        <span className="count-badge">{filtered.length} Active Accounts</span>
-      </div>
-
-      <div className="data-table-wrapper">
-        <table className="data-table">
-          <thead className="table-head">
-            <tr>
-              <th className="table-th">User Name</th>
-              <th className="table-th">Email</th>
-              <th className="table-th">Assigned Role</th>
-              <th className="table-th">Department</th>
-              <th className="table-th">Status</th>
-              <th className="table-th">Last Active</th>
-            </tr>
-          </thead>
-          <tbody className="table-tbody">
-            {filtered.map(u => (
-              <tr key={u.id} className="table-row">
-                <td className="table-td-primary font-bold">{u.name}</td>
-                <td className="table-td text-slate-600">{u.email}</td>
-                <td className="table-td">
-                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                    u.role === 'Administrator' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                    u.role === 'Manager' ? 'bg-orange-50 text-orange-700 border-orange-200' :
-                    'bg-blue-50 text-blue-700 border-blue-200'
-                  }`}>
-                    {u.role}
-                  </span>
-                </td>
-                <td className="table-td text-slate-600">{u.department}</td>
-                <td className="table-td"><span className="badge-success">{u.status}</span></td>
-                <td className="table-td text-slate-400 text-xs">{u.lastActive}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      )}
     </div>
   );
 }

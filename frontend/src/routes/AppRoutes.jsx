@@ -1,26 +1,26 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 
 // Layout & guards
 import ProtectedRoute    from '../components/auth/ProtectedRoute';
 import RequirePermission from '../components/auth/RequirePermission';
 import DashboardLayout   from '../components/layout/DashboardLayout';
 
-// Public pages
-import Login         from '../pages/auth/Login';
-import Register      from '../pages/auth/Register';
+// Public / Auth pages
+import Login          from '../pages/auth/Login';
+import Register       from '../pages/auth/Register';
 import ForgotPassword from '../pages/auth/ForgotPassword';
 
 // Protected pages
-import Dashboard          from '../pages/dashboard/Dashboard';
-import EmployeeList       from '../pages/employee/EmployeeList';
-import EmployeeDetails    from '../pages/employee/EmployeeDetails';
-import EmployeeProfile    from '../pages/employee/EmployeeProfile';
-import DepartmentList     from '../pages/department/DepartmentList';
-import SkillList          from '../pages/skills/SkillList';
-import EmployeeSkills     from '../pages/skills/EmployeeSkills';
-import CompetencyMatrix   from '../pages/skills/CompetencyMatrix';
-import GapAnalysis        from '../pages/skills/GapAnalysis';
-import Recommendations    from '../pages/skills/Recommendations';
+import Dashboard             from '../pages/dashboard/Dashboard';
+import EmployeeList          from '../pages/employee/EmployeeList';
+import EmployeeDetails       from '../pages/employee/EmployeeDetails';
+import EmployeeProfile       from '../pages/employee/EmployeeProfile';
+import DepartmentList        from '../pages/department/DepartmentList';
+import SkillList             from '../pages/skills/SkillList';
+import EmployeeSkills        from '../pages/skills/EmployeeSkills';
+import CompetencyMatrix      from '../pages/skills/CompetencyMatrix';
+import GapAnalysis           from '../pages/skills/GapAnalysis';
+import Recommendations       from '../pages/skills/Recommendations';
 import DepartmentSkillMatrix from '../pages/skills/DepartmentSkillMatrix';
 
 // Admin & Governance pages
@@ -38,18 +38,20 @@ import Unauthorized from '../pages/common/Unauthorized';
 export default function AppRoutes() {
   return (
     <Routes>
-      {/* ── Public routes ───────────────────────────────────── */}
-      <Route path="/"         element={<Login />} />
-      <Route path="/login"    element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      {/* ── Public Auth Routes ───────────────────────────────── */}
+      <Route path="/login"           element={<Login />} />
+      <Route path="/register"        element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/unauthorized" element={<Unauthorized />} />
+      <Route path="/unauthorized"    element={<Unauthorized />} />
 
-      {/* ── Protected routes (inside DashboardLayout) ────────── */}
+      {/* ── Protected Enterprise Routes ───────────────────────── */}
       <Route element={<ProtectedRoute />}>
         <Route element={<DashboardLayout />}>
 
-          {/* Accessible to all 3 roles */}
+          {/* Root redirect to Dashboard */}
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+          {/* Core Modules — All 3 Roles */}
           <Route path="/dashboard"         element={<Dashboard />} />
           <Route path="/profile"           element={<EmployeeProfile />} />
           <Route path="/competency-matrix" element={<CompetencyMatrix />} />
@@ -58,7 +60,7 @@ export default function AppRoutes() {
           <Route path="/learning"          element={<Recommendations />} />
           <Route path="/employee-skills"   element={<EmployeeSkills />} />
 
-          {/* Manager & Admin permissions */}
+          {/* Manager & Admin Modules */}
           <Route element={<RequirePermission permission="canViewEmployees" />}>
             <Route path="/employees"     element={<EmployeeList />} />
             <Route path="/employees/:id" element={<EmployeeDetails />} />
@@ -72,7 +74,7 @@ export default function AppRoutes() {
             <Route path="/reports" element={<Reports />} />
           </Route>
 
-          {/* Administrator only permissions */}
+          {/* Organization Administrator Only Modules */}
           <Route element={<RequirePermission permission="canViewSkillsCatalog" />}>
             <Route path="/skills" element={<SkillList />} />
           </Route>
@@ -104,7 +106,7 @@ export default function AppRoutes() {
         </Route>
       </Route>
 
-      {/* ── 404 catch-all ────────────────────────────────────── */}
+      {/* ── 404 Catch-All ────────────────────────────────────── */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

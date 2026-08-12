@@ -1,6 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useRole } from '../../context/RoleContext';
+import { SEED_USERS } from '../../data/seedData';
+import { notifyUpdate } from '../../utils/hybridStore';
 
 /** Derive up-to-2 uppercase initials from a name string */
 function getInitials(name = '') {
@@ -13,7 +15,7 @@ function getInitials(name = '') {
 }
 
 export default function Navbar({ onToggleMobileMenu }) {
-  const { user, logout } = useAuth();
+  const { user, login, logout } = useAuth();
   const { roleBadge } = useRole();
   const navigate = useNavigate();
 
@@ -77,8 +79,28 @@ export default function Navbar({ onToggleMobileMenu }) {
           </Link>
         </div>
 
-        {/* ── RIGHT: Notification + Profile + Sign Out ─────────── */}
-        <div className="flex items-center gap-2">
+        {/* ── RIGHT: Role Switcher + Notification + Profile + Sign Out ─────────── */}
+        <div className="flex items-center gap-2 sm:gap-3">
+
+          {/* Quick Interactive Role Switcher */}
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
+            <span className="text-[10px] font-bold text-slate-400 px-1.5 uppercase tracking-wider hidden lg:inline">Active Role</span>
+            <select
+              value={user?.role || 'ROLE_ADMIN'}
+              onChange={(e) => {
+                const newRole = e.target.value;
+                const seedMatch = SEED_USERS.find(u => u.role === newRole) || SEED_USERS[0];
+                login(seedMatch, `active-session-${seedMatch.username}`);
+                notifyUpdate();
+              }}
+              className="bg-white border border-slate-200 text-slate-800 text-xs font-semibold rounded-lg px-2 py-1 outline-none cursor-pointer hover:border-blue-400 transition-colors"
+              aria-label="Switch demonstration role"
+            >
+              <option value="ROLE_ADMIN">👑 Administrator (Alice Smith)</option>
+              <option value="ROLE_MANAGER">👔 Manager (Bob Jones)</option>
+              <option value="ROLE_EMPLOYEE">💻 Employee (Charlie Brown)</option>
+            </select>
+          </div>
 
           {/* Notification bell */}
           <button
