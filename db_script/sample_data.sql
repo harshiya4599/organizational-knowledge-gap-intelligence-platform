@@ -278,26 +278,26 @@ VALUES
 INSERT INTO gap_analysis
 (employee_id, skill_id, current_level, required_level, status)
 VALUES
-(101,18,4,5,'Open'),
-(102,11,4,5,'Open'),
-(103,29,4,5,'Open'),
-(104,40,4,5,'Open'),
-(105,15,3,5,'Open'),
-(106,21,4,5,'Open'),
-(107,12,4,5,'Open'),
-(108,14,4,5,'Open'),
-(109,27,3,5,'Open'),
-(110,31,4,5,'Open'),
-(111,41,4,5,'Open'),
-(112,48,4,5,'Open'),
-(113,30,3,5,'Open'),
-(114,16,4,5,'Open'),
-(115,46,4,5,'Open'),
-(116,22,4,5,'Open'),
-(117,35,4,5,'Open'),
-(118,47,4,5,'Open'),
-(119,42,4,5,'Open'),
-(120,26,4,5,'Open');
+(1,18,4,5,'Open'),
+(2,11,4,5,'Open'),
+(3,29,4,5,'Open'),
+(4,40,4,5,'Open'),
+(5,15,3,5,'Open'),
+(6,21,4,5,'Open'),
+(7,12,4,5,'Open'),
+(8,14,4,5,'Open'),
+(9,27,3,5,'Open'),
+(10,31,4,5,'Open'),
+(11,41,4,5,'Open'),
+(12,48,4,5,'Open'),
+(13,30,3,5,'Open'),
+(14,16,4,5,'Open'),
+(15,46,4,5,'Open'),
+(16,22,4,5,'Open'),
+(17,35,4,5,'Open'),
+(18,47,4,5,'Open'),
+(19,42,4,5,'Open'),
+(20,26,4,5,'Open');
 
 -- ==========================================
 -- Training Recommendations
@@ -326,3 +326,40 @@ VALUES
 (18,'Professional Communication','LinkedIn Learning','2 Weeks','Recommended'),
 (19,'Project Management Basics','Google','5 Weeks','Recommended'),
 (20,'Git & GitHub Professional','Udemy','2 Weeks','Recommended');
+-- ==========================================
+-- Goal 2: Learning & Analytics Sample Data
+-- ==========================================
+
+INSERT INTO organization.trainings (title, description, provider, start_date, end_date, status) VALUES
+('Advanced React Patterns', 'Deep dive into React hooks and performance', 'Coursera', '2026-09-01', '2026-09-15', 'Upcoming'),
+('Cloud Architecture Basics', 'Introduction to AWS and Azure', 'AWS Academy', '2026-08-20', '2026-09-10', 'In Progress'),
+('Leadership for Tech Teams', 'Management strategies for team leaders', 'LinkedIn Learning', '2026-10-01', '2026-10-14', 'Upcoming');
+
+INSERT INTO organization.enrollments (training_id, employee_id, enrollment_date, completion_status) VALUES
+(1, 1, '2026-08-10', 'Enrolled'),
+(1, 6, '2026-08-11', 'Enrolled'),
+(2, 2, '2026-08-12', 'In Progress'),
+(3, 10, '2026-08-12', 'Enrolled');
+
+INSERT INTO organization.mentorships (mentor_id, mentee_id, start_date, focus_area, status) VALUES
+(6, 1, '2026-07-01', 'Frontend Architecture', 'Active'),
+(13, 8, '2026-06-15', 'Financial Modeling', 'Active'),
+(17, 12, '2026-08-01', 'Advanced Recruitment Strategies', 'Active');
+
+INSERT INTO organization.knowledge_sessions (title, speaker_id, session_date, topic, recording_url) VALUES
+('State Management in 2026', 1, '2026-08-15 14:00:00', 'Web Development', 'https://intranet.orgkgi.com/sessions/1'),
+('Securing Microservices', 2, '2026-08-22 10:00:00', 'Security', 'https://intranet.orgkgi.com/sessions/2');
+
+INSERT INTO organization.assessments (employee_id, assessment_type, skill_id, score, comments) VALUES
+(1, 'Self', 11, 4, 'Comfortable with complex React components'),
+(2, 'Manager', 19, 5, 'Exceptional database optimization skills'),
+(10, 'Peer', 43, 4, 'Great communication during incident response');
+
+INSERT INTO organization.notifications (employee_id, message, type, sent) VALUES
+(1, 'You have been enrolled in Advanced React Patterns', 'Training', TRUE),
+(2, 'Reminder: Cloud Architecture Basics starts soon', 'Reminder', FALSE),
+(6, 'Mentorship feedback required', 'Action Item', TRUE);
+
+INSERT INTO organization.reports (report_name, generated_by, data_url) VALUES
+('Q3 Skill Gap Analysis', 17, '/reports/q3-gap.pdf'),
+('Engineering Dept Training Completion', 6, '/reports/eng-training.csv');

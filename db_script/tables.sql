@@ -109,3 +109,70 @@ CREATE TABLE training_recommendations (
     duration VARCHAR(50),
     status VARCHAR(20) DEFAULT 'Recommended'
 );
+-- ==========================================
+-- Goal 2: Learning & Analytics Tables
+-- ==========================================
+
+CREATE TABLE organization.trainings (
+    training_id SERIAL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    provider VARCHAR(100),
+    start_date DATE,
+    end_date DATE,
+    status VARCHAR(50) DEFAULT 'Upcoming'
+);
+
+CREATE TABLE organization.enrollments (
+    enrollment_id SERIAL,
+    training_id INT NOT NULL,
+    employee_id BIGINT NOT NULL,
+    enrollment_date DATE DEFAULT CURRENT_DATE,
+    completion_status VARCHAR(50) DEFAULT 'Enrolled'
+);
+
+CREATE TABLE organization.mentorships (
+    mentorship_id SERIAL,
+    mentor_id BIGINT NOT NULL,
+    mentee_id BIGINT NOT NULL,
+    start_date DATE,
+    end_date DATE,
+    focus_area VARCHAR(255),
+    status VARCHAR(50) DEFAULT 'Active'
+);
+
+CREATE TABLE organization.knowledge_sessions (
+    session_id SERIAL,
+    title VARCHAR(255) NOT NULL,
+    speaker_id BIGINT NOT NULL,
+    session_date TIMESTAMP,
+    topic VARCHAR(255),
+    recording_url VARCHAR(255)
+);
+
+CREATE TABLE organization.assessments (
+    assessment_id SERIAL,
+    employee_id BIGINT NOT NULL,
+    assessment_type VARCHAR(100) NOT NULL,
+    skill_id BIGINT NOT NULL,
+    score INT CHECK (score BETWEEN 1 AND 5),
+    comments TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE organization.notifications (
+    notification_id SERIAL,
+    employee_id BIGINT NOT NULL,
+    message TEXT NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    sent BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE organization.reports (
+    report_id SERIAL,
+    report_name VARCHAR(255) NOT NULL,
+    generated_by BIGINT NOT NULL,
+    generated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    data_url VARCHAR(255)
+);
