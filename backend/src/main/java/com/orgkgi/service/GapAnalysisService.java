@@ -4,6 +4,7 @@ package com.orgkgi.service;
 import com.orgkgi.entity.*;
 import com.orgkgi.repository.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
  
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +28,7 @@ public class GapAnalysisService {
         this.gapAnalysisRepository = gapAnalysisRepository;
     }
  
+    @Transactional
     public List<GapAnalysis> generateGapAnalysis(Long employeeId) {
  
         Employee employee = employeeRepository.findById(employeeId)
@@ -39,6 +41,7 @@ public class GapAnalysisService {
                 competencyRepository.findByDepartmentId(employee.getDepartment().getId());
  
         List<GapAnalysis> report = new ArrayList<>();
+        gapAnalysisRepository.deleteByEmployeeId(employeeId);
  
         for (Competency competency : competencies) {
  

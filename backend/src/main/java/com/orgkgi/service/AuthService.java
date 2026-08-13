@@ -11,7 +11,11 @@ import com.orgkgi.entity.Role;
 import com.orgkgi.entity.User;
 import com.orgkgi.repository.RoleRepository;
 import com.orgkgi.repository.UserRepository;
+import com.orgkgi.repository.EmployeeRepository;
+import com.orgkgi.repository.DepartmentRepository;
+import com.orgkgi.entity.Employee;
 import com.orgkgi.security.JwtTokenProvider;
+import com.orgkgi.security.RoleName;
 import com.orgkgi.entity.PasswordResetToken;
 import com.orgkgi.repository.PasswordResetTokenRepository;
 import java.time.Instant;
@@ -33,6 +37,10 @@ public class AuthService {
     private AuthenticationManager authenticationManager;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private EmployeeRepository employeeRepository;
+    @Autowired
+    private DepartmentRepository departmentRepository;
     @Autowired
     private RoleRepository roleRepository;
     @Autowired
@@ -137,13 +145,16 @@ public class AuthService {
 
     public LoginResponse login(LoginRequest loginRequest) {
         String token = authenticateUser(loginRequest);
-        return new LoginResponse("Login successful!", token);
+        User user = userRepository.findByUsername(loginRequest.getUsernameOrEmail())
+                .or(() -> userRepository.findByEmail(loginRequest.getUsernameOrEmail()))
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return new LoginResponse("Login successful!", token, RoleName.normalize(user.getRole().getRoleName()));
     }
 
     public UserProfileResponse getProfile(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        return new UserProfileResponse(user.getId(), user.getUsername(), user.getEmail(), user.getRole().getRoleName());
+        return toProfileResponse(user);
     }
 
     public UserProfileResponse updateProfile(String username, ProfileUpdateRequest request) {
@@ -154,7 +165,30 @@ public class AuthService {
             user.setEmail(request.getEmail());
         }
 
+        Employee employee = employeeRepository.findByUserId(user.getId()).orElse(null);
+        if (employee != null) {
+            if (request.getName() != null && !request.getName().isBlank()) employee.setName(request.getName());
+            if (request.getPhone() != null && !request.getPhone().isBlank()) employee.setPhone(request.getPhone());
+            if (request.getDesignation() != null && !request.getDesignation().isBlank()) employee.setDesignation(request.getDesignation());
+            if (request.getDepartment() != null && !request.getDepartment().isBlank()) {
+                employee.setDepartment(departmentRepository.findByDepartmentName(request.getDepartment())
+                        .orElseThrow(() -> new IllegalArgumentException("Department not found: " + request.getDepartment())));
+            }
+            employee.setEmail(user.getEmail());
+            employeeRepository.save(employee);
+        }
         userRepository.save(user);
-        return new UserProfileResponse(user.getId(), user.getUsername(), user.getEmail(), user.getRole().getRoleName());
+        return toProfileResponse(user);
+    }
+
+    private UserProfileResponse toProfileResponse(User user) {
+        Employee employee = employeeRepository.findByUserId(user.getId()).orElse(null);
+        Long employeeId = employee == null ? null : employee.getId();
+        return new UserProfileResponse(employeeId == null ? user.getId() : employeeId, user.getId(), employeeId,
+                user.getUsername(), user.getEmail(), RoleName.normalize(user.getRole().getRoleName()),
+                employee == null ? user.getUsername() : employee.getName(),
+                employee == null ? null : employee.getPhone(),
+                employee == null || employee.getDepartment() == null ? null : employee.getDepartment().getDepartmentName(),
+                employee == null ? null : employee.getDesignation());
     }
 }

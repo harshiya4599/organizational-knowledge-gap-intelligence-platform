@@ -5,7 +5,7 @@
     {"name":"Authentication", "item":[
       {"name":"Register", "request":{"method":"POST", "header":[{"key":"Content-Type","value":"application/json"}], "url":"{{baseUrl}}/api/auth/register", "body":{"mode":"raw","raw":"{\n  \"username\": \"employee1\",\n  \"email\": \"employee1@example.com\",\n  \"password\": \"Password123\",\n  \"role\": \"ROLE_EMPLOYEE\"\n}"}}},
       {"name":"Login", "event":[{"listen":"test","script":{"exec":["var body = pm.response.json(); pm.collectionVariables.set('token', body.token);"]}}], "request":{"method":"POST", "header":[{"key":"Content-Type","value":"application/json"}], "url":"{{baseUrl}}/api/auth/login", "body":{"mode":"raw","raw":"{\n  \"username\": \"employee1\",\n  \"password\": \"Password123\"\n}"}}},
-      {"name":"Profile", "request":{"method":"GET", "header":[{"key":"Authorization","value":"Bearer {{token}}"}], "url":"{{baseUrl}}/api/profile"}},
+      {"name":"Profile", "event":[{"listen":"test","script":{"exec":["var body = pm.response.json(); pm.collectionVariables.set('employeeId', body.employeeId || body.id);"]}}], "request":{"method":"GET", "header":[{"key":"Authorization","value":"Bearer {{token}}"}], "url":"{{baseUrl}}/api/profile"}},
       {"name":"Logout", "request":{"method":"POST", "header":[{"key":"Authorization","value":"Bearer {{token}}"}], "url":"{{baseUrl}}/api/auth/logout"}}
     ]},
     {"name":"Assessment", "item":[

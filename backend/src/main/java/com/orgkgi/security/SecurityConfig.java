@@ -87,7 +87,7 @@ public class SecurityConfig {
                         .requestMatchers("/notifications/send", "/api/notifications/send", "/notifications/reminders/**", "/api/notifications/reminders/**")
                         .hasAnyAuthority("ROLE_ADMIN", "ROLE_HR", "ROLE_MANAGER", "ROLE_DEPARTMENT_HEAD")
                         .requestMatchers("/dashboard/**", "/api/dashboard/**")
-                        .hasAnyAuthority("ROLE_ADMIN", "ROLE_HR", "ROLE_MANAGER", "ROLE_DEPARTMENT_HEAD")
+                        .hasAnyAuthority("ROLE_ADMIN", "ROLE_HR", "ROLE_MANAGER", "ROLE_DEPARTMENT_HEAD", "ROLE_EMPLOYEE")
                         // Employee and skill module endpoints require authentication
                         .requestMatchers("/employees/**").authenticated()
                         .requestMatchers("/skills/**").authenticated()
@@ -116,4 +116,3 @@ public class SecurityConfig {
         return http.build();
     }
 }
-    

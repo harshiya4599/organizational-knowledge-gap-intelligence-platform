@@ -9,4 +9,6 @@ public interface GapAnalysisRepository extends JpaRepository<GapAnalysis, Long> 
 
     List<GapAnalysis> findByEmployeeId(Long employeeId);
 
+    void deleteByEmployeeId(Long employeeId);
+
 }

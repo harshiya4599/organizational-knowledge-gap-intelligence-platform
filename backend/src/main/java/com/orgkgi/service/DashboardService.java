@@ -54,6 +54,34 @@ public class DashboardService {
         return dashboard;
     }
 
+    public Map<String, Object> getEmployeeDashboardData(Long employeeId) {
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
+        List<EmployeeSkill> skills = employeeSkillRepository.findByEmployeeId(employeeId);
+        List<Assessment> assessments = assessmentRepository.findByEmployeeId(employeeId);
+        double averageSkillLevel = skills.stream().mapToInt(EmployeeSkill::getLevel).average().orElse(0.0);
+        double averageScore = assessments.stream().map(Assessment::getOverallScore)
+                .filter(java.util.Objects::nonNull).mapToInt(Integer::intValue).average().orElse(0.0);
+
+        Map<String, Object> progress = new HashMap<>();
+        progress.put("assessmentCount", assessments.size());
+        progress.put("averageAssessmentScore", Math.round(averageScore * 100.0) / 100.0);
+        progress.put("completionRate", assessments.isEmpty() ? 0.0 : Math.round(assessments.stream()
+                .filter(assessment -> assessment.getOverallScore() != null && assessment.getOverallScore() >= 3).count()
+                * 10000.0 / assessments.size()) / 100.0);
+
+        Map<String, Object> dashboard = new HashMap<>();
+        dashboard.put("employeeCount", 1);
+        dashboard.put("departmentCount", employee.getDepartment() == null ? 0 : 1);
+        dashboard.put("averageSkillLevel", Math.round(averageSkillLevel * 100.0) / 100.0);
+        dashboard.put("teamSkillCoverage", skills.isEmpty() ? 0.0 : Math.round(skills.stream()
+                .filter(skill -> skill.getLevel() >= 3).count() * 10000.0 / skills.size()) / 100.0);
+        dashboard.put("trainingCompletionRate", averageSkillLevel >= 3 ? 100.0 : 0.0);
+        dashboard.put("learningProgress", progress);
+        dashboard.put("departmentPerformance", List.of());
+        return dashboard;
+    }
+
     private Map<String, Object> calculateLearningProgress() {
         List<Assessment> assessments = assessmentRepository.findAll();
         double averageScore = assessments.stream()
