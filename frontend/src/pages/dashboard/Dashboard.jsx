@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useRole, ROLES } from '../../context/RoleContext';
 import { getOrganizationTrendAnalytics } from '../../services/analyticsService';
@@ -207,9 +208,9 @@ export default function Dashboard() {
               <p className="text-xs text-slate-300 leading-relaxed mb-4">
                 Based on your current gap analysis in <strong>Docker</strong>, completing the <em>Container Orchestration</em> module will boost your overall competency to <strong>Expert (4.5)</strong>.
               </p>
-              <a href="/recommendations" className="btn-primary text-xs w-full text-center py-2">
+              <Link to="/recommendations" className="btn-primary text-xs w-full text-center py-2 block">
                 View Recommendations &rarr;
-              </a>
+              </Link>
             </div>
 
             <div className="panel p-5">

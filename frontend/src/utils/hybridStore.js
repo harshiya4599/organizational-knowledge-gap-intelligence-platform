@@ -18,6 +18,7 @@ import {
   SEED_COMPETENCIES,
   SEED_EMPLOYEE_SKILLS,
   SEED_TRAININGS,
+  SEED_RECOMMENDATIONS,
   SEED_MENTORS,
   SEED_KNOWLEDGE_SESSIONS,
   SEED_EXPERTS,
@@ -31,7 +32,7 @@ import {
   SEED_LEARNING_VELOCITY,
 } from '../data/seedData';
 
-const STORE_KEY = 'kg_hybrid_store_v4';
+const STORE_KEY = 'kg_hybrid_store_v5';
 const EVENT_NAME = 'kg_data_sync_event';
 
 /**
@@ -150,6 +151,10 @@ function calculateCompetencyAverages(competencies, employeeSkills, employees) {
 }
 
 function calculateInitialRecommendations(gaps, trainings) {
+  if (SEED_RECOMMENDATIONS && SEED_RECOMMENDATIONS.length > 0) {
+    return SEED_RECOMMENDATIONS;
+  }
+
   return gaps.map((gap, idx) => {
     const matchedTraining = trainings.find(t =>
       t.recommendedForSkill === gap.skill ||
@@ -171,7 +176,7 @@ function calculateInitialRecommendations(gaps, trainings) {
       courseTitle: matchedTraining?.name || `${gap.skill} Mastery & Production Architecture`,
       trainingName: matchedTraining?.name || `${gap.skill} Mastery & Production Architecture`,
       trainingId: matchedTraining?.id || 1,
-      provider: matchedTraining?.dept === 'Data Science' ? 'Coursera Enterprise' : 'Internal LMS',
+      provider: matchedTraining?.dept === 'Data Science' ? 'Coursera' : 'Internal LMS',
       duration: matchedTraining?.duration || '4 Weeks',
       difficulty: matchedTraining?.difficulty || 'Advanced',
       matchScore: matchPct,
@@ -182,6 +187,56 @@ function calculateInitialRecommendations(gaps, trainings) {
       priority: gap.priority || 'High',
     };
   });
+}
+
+export function recalculateGapsAndDependencies(store) {
+  if (!store) return;
+  const computedCompetencies = calculateCompetencyAverages(store.competencies || [], store.employee_skills || [], store.employees || []);
+  const computedGaps = calculateInitialGaps(store.employee_skills || [], computedCompetencies, store.employees || []);
+  
+  store.competencies = computedCompetencies;
+  store.gap_analysis = computedGaps;
+
+  // Dynamically update recommendations based on employee active skills
+  if (store.recommendations && Array.isArray(store.recommendations)) {
+    store.recommendations = store.recommendations.map(rec => {
+      const empSkill = (store.employee_skills || []).find(es =>
+        (String(es.employeeId) === String(rec.employeeId) || !rec.employeeId) &&
+        (es.skill.toLowerCase().includes(rec.skill.toLowerCase()) || rec.skill.toLowerCase().includes(es.skill.toLowerCase()))
+      );
+
+      const curLevel = empSkill?.level ?? rec.currentLevel ?? 2;
+      const targetLevel = rec.targetLevel || 4;
+      const gapDiff = Math.max(0, targetLevel - curLevel);
+
+      let priority = rec.priority;
+      let score = rec.score || rec.matchScore || 88;
+
+      if (gapDiff >= 2) {
+        priority = 'Critical';
+        score = Math.max(score, 96);
+      } else if (gapDiff === 1) {
+        priority = 'High';
+        score = Math.max(score, 88);
+      } else if (gapDiff === 0) {
+        priority = 'Completed';
+        score = 75;
+      }
+
+      return {
+        ...rec,
+        currentLevel: curLevel,
+        targetLevel,
+        gapLevel: gapDiff,
+        priority: priority === 'Completed' ? 'Completed' : (rec.priority || priority),
+        matchScore: score,
+        score,
+        aiMatchScore: score,
+      };
+    });
+  }
+
+  store.learning_velocity = calculateDynamicVelocity(store);
 }
 
 function calculateDynamicVelocity(store, employeeId = null) {
@@ -225,7 +280,9 @@ function calculateDynamicVelocity(store, employeeId = null) {
 function getInitialStoreState() {
   const computedCompetencies = calculateCompetencyAverages(SEED_COMPETENCIES, SEED_EMPLOYEE_SKILLS, SEED_EMPLOYEES);
   const initialGaps = calculateInitialGaps(SEED_EMPLOYEE_SKILLS, computedCompetencies, SEED_EMPLOYEES);
-  const initialRecs = calculateInitialRecommendations(initialGaps, SEED_TRAININGS);
+  const initialRecs = SEED_RECOMMENDATIONS && SEED_RECOMMENDATIONS.length > 0
+    ? SEED_RECOMMENDATIONS
+    : calculateInitialRecommendations(initialGaps, SEED_TRAININGS);
   const initialCerts = normalizeCertificationsList(SEED_CERTIFICATIONS);
 
   return {
@@ -271,7 +328,7 @@ export function getStore() {
     }
     const parsed = JSON.parse(raw);
 
-    // Guard: ensure all Milestone 3 collections exist even if previous cache was loaded
+    // Guard: ensure all collections exist even if previous cache was loaded
     let needsResave = false;
     const initial = getInitialStoreState();
     Object.keys(initial).forEach((key) => {
@@ -280,6 +337,13 @@ export function getStore() {
         needsResave = true;
       }
     });
+
+    // Ensure recommendations always contain external industry platform courses (no Internal LMS in recommendations)
+    const hasInternalLms = (parsed.recommendations || []).some(r => r.provider === 'Internal LMS');
+    if (!parsed.recommendations || parsed.recommendations.length < SEED_RECOMMENDATIONS.length || hasInternalLms) {
+      parsed.recommendations = SEED_RECOMMENDATIONS;
+      needsResave = true;
+    }
 
     // Ensure certs always have current days remaining calculated
     if (parsed.certifications && Array.isArray(parsed.certifications)) {
@@ -780,21 +844,6 @@ export function renewCertification(certId) {
 
   saveStore(store);
   return true;
-}
-
-/**
- * Recalculates gaps, recommendations, and analytics based on latest employee skills and competencies.
- */
-function recalculateGapsAndDependencies(store) {
-  const employeeSkills = store.employee_skills || [];
-  const competencies = store.competencies || [];
-  const employees = store.employees || [];
-  const trainings = store.trainings || [];
-
-  store.competencies = calculateCompetencyAverages(competencies, employeeSkills, employees);
-  store.gap_analysis = calculateInitialGaps(employeeSkills, store.competencies, employees);
-  store.recommendations = calculateInitialRecommendations(store.gap_analysis, trainings);
-  store.learning_velocity = calculateDynamicVelocity(store);
 }
 
 /**

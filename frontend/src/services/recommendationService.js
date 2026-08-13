@@ -9,24 +9,24 @@ import { getCollection } from '../utils/hybridStore';
 
 export function normalizeRecommendation(item) {
   if (!item) return null;
-  const courseName = item.course || item.courseTitle || item.title || `Mastering ${item.skill || 'Technology'}`;
+  const courseName = item.courseTitle || item.course || item.title || `Mastering ${item.skill || 'Technology'}`;
   const skillName = item.skill || item.title || 'Technical Skill';
   const curLvl = typeof item.currentLevel === 'number' ? item.currentLevel : 2;
   const reqLvl = typeof item.targetLevel === 'number' ? item.targetLevel : 4;
-  const gapLvl = Math.max(1, reqLvl - curLvl);
+  const gapLvl = Math.max(0, reqLvl - curLvl);
   const scoreVal = typeof item.score === 'number'
     ? item.score
     : (typeof item.matchScore === 'number'
         ? item.matchScore
         : (typeof item.aiMatchScore === 'number'
             ? item.aiMatchScore
-            : (gapLvl >= 2 ? 94 : gapLvl === 1 ? 82 : 72)));
+            : (gapLvl >= 2 ? 96 : gapLvl === 1 ? 88 : 75)));
 
   const diffStr = item.difficulty || (reqLvl >= 4 ? 'Advanced' : 'Intermediate');
-  const durStr = item.duration || (gapLvl >= 2 ? '4 Weeks' : '3 Weeks');
-  const gainStr = item.expectedImprovement || item.expectedGain || `+${gapLvl}.0 Levels`;
-  const provStr = item.provider || 'Internal L&D LMS';
-  const reasonStr = item.reason || `Targeted to bridge ${skillName} skill deficit (Current: ${curLvl}, Target: ${reqLvl}) relative to departmental benchmark.`;
+  const durStr = item.duration || (gapLvl >= 2 ? '24 Hours (4 Weeks)' : '16 Hours (3 Weeks)');
+  const gainStr = item.expectedImprovement || item.expectedGain || `+${Math.max(1, gapLvl)}.0 Level Gain`;
+  const provStr = item.provider || 'Internal LMS';
+  const reasonStr = item.reason || `Targeted to bridge ${skillName} skill deficit (Current: Level ${curLvl}, Required: Level ${reqLvl}).`;
 
   return {
     id: item.id,
@@ -38,7 +38,8 @@ export function normalizeRecommendation(item) {
     course: courseName,
     courseTitle: courseName,
     provider: provStr,
-    priority: item.priority || (gapLvl >= 2 ? 'High' : 'Medium'),
+    instructor: item.instructor || 'Senior Technical Specialist',
+    priority: item.priority || (gapLvl >= 2 ? 'Critical' : gapLvl === 1 ? 'High' : 'Medium'),
     priorityBadge: (item.priority === 'Critical' || gapLvl >= 2) ? 'badge-danger' : 'badge-warning',
     score: scoreVal,
     matchScore: scoreVal,
@@ -47,6 +48,16 @@ export function normalizeRecommendation(item) {
     difficulty: diffStr,
     expectedImprovement: gainStr,
     expectedGain: gainStr,
+    description: item.description || `Comprehensive production curriculum designed to advance ${skillName} capabilities.`,
+    learningOutcomes: Array.isArray(item.learningOutcomes) && item.learningOutcomes.length > 0
+      ? item.learningOutcomes
+      : [
+          `Production patterns and architecture for ${skillName}`,
+          `Practical enterprise implementation and testing techniques`,
+          `Hands-on workflows aligned with organizational benchmarks`,
+        ],
+    externalUrl: item.externalUrl || '#',
+    quiz: Array.isArray(item.quiz) && item.quiz.length > 0 ? item.quiz : null,
     reason: reasonStr,
     status: item.status || 'Recommended',
     gapLevel: gapLvl,
