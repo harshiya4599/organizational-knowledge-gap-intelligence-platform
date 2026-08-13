@@ -113,14 +113,25 @@ export default function Login() {
   const { login } = useAuth();
   const navigate  = useNavigate();
 
-  const [form,       setForm]       = useState({ email: '', password: '' });
-  const [errors,     setErrors]     = useState({});
-  const [loading,    setLoading]    = useState(false);
-  const [showPw,     setShowPw]     = useState(false);
+  // Username and password fields ALWAYS start completely empty
+  const [form, setForm] = useState({ email: '', password: '' });
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [showPw, setShowPw] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  // UI-only role selection — does NOT grant permissions.
-  // The backend/JWT is the actual authority for authentication and role assignment.
+
+  // UI role indicator — does NOT autofill or grant permissions
   const [selectedRole, setSelectedRole] = useState('Employee');
+
+  /**
+   * Switching roles clears both username and password fields every time.
+   * Never auto-fills, never injects credentials into state.
+   */
+  function handleRoleChange(newRole) {
+    setSelectedRole(newRole);
+    setForm({ email: '', password: '' });
+    setErrors({});
+  }
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -146,19 +157,11 @@ export default function Login() {
       login(res.user, res.token);
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      // Network error (backend not running) — do not expose server internals
       if (err.isNetworkError) {
         setErrors({ form: 'Cannot reach the server. Please try again in a moment.' });
         return;
       }
-      const status = err.status || err.response?.status;
-      if (status === 401 || status === 403) {
-        setErrors({ form: 'Incorrect username or password. Please try again.' });
-      } else if (status === 400) {
-        setErrors({ form: 'Incorrect username or password. Please try again.' });
-      } else {
-        setErrors({ form: 'Incorrect username or password. Please try again.' });
-      }
+      setErrors({ form: 'Incorrect username or password. Please try again.' });
     } finally {
       setLoading(false);
     }
@@ -235,39 +238,28 @@ export default function Login() {
           {/* ── Login Form ───────────────────────────────────── */}
           <form onSubmit={handleSubmit} noValidate className="space-y-4">
 
-            {/* Role Selection (UI hint only — backend validates actual role) */}
+            {/* Role Selection Segmented Bar (Clears form fields on change, never autofills) */}
             <div>
-              <label htmlFor="login-role" className="form-label">Role</label>
-              <div className="input-icon-wrap">
-                <span className="input-icon-left" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                  </svg>
-                </span>
-                <select
-                  id="login-role"
-                  value={selectedRole}
-                  onChange={(e) => {
-                    const newRole = e.target.value;
-                    setSelectedRole(newRole);
-                    if (!form.email || form.email === 'admin' || form.email === 'manager' || form.email === 'emp01') {
-                      setForm({
-                        email: newRole === 'Administrator' ? 'admin' : newRole === 'Manager' ? 'manager' : 'emp01',
-                        password: form.password || 'password'
-                      });
-                    }
-                  }}
-                  className="form-input-icon w-full appearance-none pr-8 cursor-pointer bg-white"
-                  aria-label="Select your role"
-                >
-                  <option value="Employee">Employee</option>
-                  <option value="Manager">Manager</option>
-                  <option value="Administrator">Organization Administrator</option>
-                </select>
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                </span>
+              <label className="form-label mb-1.5">Sign in as</label>
+              <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200">
+                {[
+                  { id: 'Employee', label: 'Employee' },
+                  { id: 'Manager', label: 'Manager' },
+                  { id: 'Administrator', label: 'Admin' },
+                ].map((role) => (
+                  <button
+                    key={role.id}
+                    type="button"
+                    onClick={() => handleRoleChange(role.id)}
+                    className={`py-2 px-2 rounded-lg text-xs font-bold transition-all text-center ${
+                      selectedRole === role.id
+                        ? 'bg-white text-blue-600 shadow-sm border border-slate-200/80'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+                    }`}
+                  >
+                    {role.label}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -283,7 +275,7 @@ export default function Login() {
                   autoComplete="username"
                   value={form.email}
                   onChange={handleChange}
-                  placeholder="you@company.com or username"
+                  placeholder="Enter your username or email"
                   className={errors.email ? 'form-input-icon form-input-icon-error' : 'form-input-icon'}
                   aria-describedby={errors.email ? 'login-email-err' : undefined}
                   aria-invalid={!!errors.email}
@@ -400,4 +392,3 @@ export default function Login() {
     </div>
   );
 }
-

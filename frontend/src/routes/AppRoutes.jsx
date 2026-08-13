@@ -9,6 +9,7 @@ import DashboardLayout   from '../components/layout/DashboardLayout';
 import Login          from '../pages/auth/Login';
 import Register       from '../pages/auth/Register';
 import ForgotPassword from '../pages/auth/ForgotPassword';
+import Unauthorized   from '../pages/common/Unauthorized';
 
 // Protected pages
 import Dashboard             from '../pages/dashboard/Dashboard';
@@ -23,6 +24,10 @@ import GapAnalysis           from '../pages/skills/GapAnalysis';
 import Recommendations       from '../pages/skills/Recommendations';
 import DepartmentSkillMatrix from '../pages/skills/DepartmentSkillMatrix';
 
+// Milestone 3: Knowledge-Sharing, Mentorship & Learning Progress Tracking
+import KnowledgeSharingHub   from '../pages/mentorship/KnowledgeSharingHub';
+import LearningProgressView  from '../pages/learning/LearningProgressView';
+
 // Admin & Governance pages
 import UserManagement     from '../pages/admin/UserManagement';
 import RoleManagement     from '../pages/admin/RoleManagement';
@@ -33,7 +38,6 @@ import AnalyticsView      from '../pages/analytics/AnalyticsView';
 
 // Common
 import NotFound     from '../pages/common/NotFound';
-import Unauthorized from '../pages/common/Unauthorized';
 
 export default function AppRoutes() {
   return (
@@ -59,6 +63,18 @@ export default function AppRoutes() {
           <Route path="/recommendations"   element={<Recommendations />} />
           <Route path="/learning"          element={<Recommendations />} />
           <Route path="/employee-skills"   element={<EmployeeSkills />} />
+
+          {/* Milestone 3: Knowledge-Sharing, Mentorship & Communities */}
+          <Route path="/knowledge-sharing"   element={<KnowledgeSharingHub initialTab="mentorship" />} />
+          <Route path="/mentorship"          element={<KnowledgeSharingHub initialTab="mentorship" />} />
+          <Route path="/expert-directory"    element={<KnowledgeSharingHub initialTab="experts" />} />
+          <Route path="/communities"         element={<KnowledgeSharingHub initialTab="communities" />} />
+          <Route path="/knowledge-resources" element={<KnowledgeSharingHub initialTab="resources" />} />
+
+          {/* Milestone 3: Learning Progress Tracking, Milestones & Certifications */}
+          <Route path="/learning-progress"   element={<LearningProgressView initialTab="enrollments" />} />
+          <Route path="/certifications"      element={<LearningProgressView initialTab="certifications" />} />
+          <Route path="/learning-analytics"  element={<LearningProgressView initialTab="velocity" />} />
 
           {/* Manager & Admin Modules */}
           <Route element={<RequirePermission permission="canViewEmployees" />}>

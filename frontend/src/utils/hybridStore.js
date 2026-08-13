@@ -6,7 +6,8 @@
  * real Spring Boot REST APIs. Guarantees the application is NEVER EMPTY,
  * supports CRUD persistence across page refreshes in offline/demo mode,
  * and seamlessly synchronizes cross-module updates across Employees,
- * Skills, Competencies, Gaps, Recommendations, Heatmaps, and Dashboards.
+ * Skills, Competencies, Gaps, Recommendations, Mentorship, Communities,
+ * Learning Progress, Certifications, and Dashboards.
  */
 
 import {
@@ -17,10 +18,68 @@ import {
   SEED_COMPETENCIES,
   SEED_EMPLOYEE_SKILLS,
   SEED_TRAININGS,
+  SEED_MENTORS,
+  SEED_KNOWLEDGE_SESSIONS,
+  SEED_EXPERTS,
+  SEED_COMMUNITIES,
+  SEED_KNOWLEDGE_RESOURCES,
+  SEED_SESSION_FEEDBACK,
+  SEED_LEARNING_ENROLLMENTS,
+  SEED_LEARNING_MILESTONES,
+  SEED_CERTIFICATIONS,
+  SEED_SKILL_IMPROVEMENTS,
+  SEED_LEARNING_VELOCITY,
 } from '../data/seedData';
 
-const STORE_KEY = 'kg_hybrid_store_v3';
+const STORE_KEY = 'kg_hybrid_store_v4';
 const EVENT_NAME = 'kg_data_sync_event';
+
+/**
+ * Calculates dynamic days remaining from today to expiryDate string.
+ */
+export function calculateDaysRemaining(expiryDateStr) {
+  if (!expiryDateStr) return 365;
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const exp = new Date(expiryDateStr);
+    exp.setHours(0, 0, 0, 0);
+    const diffMs = exp - today;
+    return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  } catch (e) {
+    return 365;
+  }
+}
+
+/**
+ * Normalizes certifications with dynamic status and days remaining.
+ */
+function normalizeCertificationsList(certs) {
+  return certs.map(c => {
+    const days = calculateDaysRemaining(c.expiryDate);
+    let status = 'Valid';
+    let statusBadge = 'badge-success bg-emerald-50 text-emerald-700 border-emerald-200';
+    let renewalRequired = false;
+
+    if (days < 0) {
+      status = 'Expired';
+      statusBadge = 'badge-danger bg-red-50 text-red-700 border-red-200';
+      renewalRequired = true;
+    } else if (days <= 60) {
+      status = 'Expiring Soon';
+      statusBadge = 'badge-warning bg-amber-50 text-amber-700 border-amber-200';
+      renewalRequired = true;
+    }
+
+    return {
+      ...c,
+      daysRemaining: days,
+      status,
+      statusBadge,
+      renewalRequired,
+    };
+  });
+}
 
 function calculateInitialGaps(employeeSkills, competencies, employees) {
   const gaps = [];
@@ -48,11 +107,10 @@ function calculateInitialGaps(employeeSkills, competencies, employees) {
         requiredLevel: reqLevel,
         overallSkillScore: curLevel,
         gapDiff: gapDiff,
-        gapSeverity: gapDiff >= 2 ? 'Critical' : 'High',
-        priority: gapDiff >= 2 ? 'High' : 'Medium',
-        deficitSkills: [es.skill],
-        missingSkills: [es.skill],
-        recommendation: `Complete targeted training in ${es.skill} to bridge ${gapDiff}-level deficit`,
+        gapScore: gapDiff,
+        gapSeverity: gapDiff >= 3 ? 'Critical' : gapDiff >= 2 ? 'High' : gapDiff === 1 ? 'Medium' : 'Low',
+        priority: gapDiff >= 3 ? 'Critical' : gapDiff >= 2 ? 'High' : gapDiff === 1 ? 'Medium' : 'Low',
+        lastAssessed: es.lastUpdated || '2026-07-15',
       });
     }
   });
@@ -60,90 +118,115 @@ function calculateInitialGaps(employeeSkills, competencies, employees) {
   return gaps;
 }
 
-function calculateInitialRecommendations(gaps, trainings) {
-  const recs = [];
-  const trainingMap = Object.fromEntries(trainings.map(t => [t.recommendedForSkill, t]));
-
-  const DETERMINISTIC_MATCH_SCORES = [96, 94, 91, 88, 85, 82, 79, 74, 68, 62];
-
-  gaps.forEach((g, idx) => {
-    const matchedTraining = trainingMap[g.skill];
-    const scoreVal = DETERMINISTIC_MATCH_SCORES[idx % DETERMINISTIC_MATCH_SCORES.length];
-    const diffLevel = g.requiredLevel - g.currentLevel;
-    const gainStr = matchedTraining?.expectedGain || `+${diffLevel}.0 Levels`;
-    const difficultyStr = matchedTraining?.difficulty || (g.requiredLevel >= 4 ? 'Advanced' : 'Intermediate');
-    const durationStr = matchedTraining?.duration || (diffLevel >= 2 ? '4 Weeks' : '3 Weeks');
-    const providerStr = matchedTraining ? 'Internal L&D LMS' : (idx % 2 === 0 ? 'Coursera' : 'Udemy');
-    const courseTitle = matchedTraining?.name || `Enterprise ${g.skill} Mastery & Production Patterns`;
-
-    recs.push({
-      id: idx + 1,
-      employeeId: g.employeeId,
-      employee: g.employee,
-      department: g.department,
-      skill: g.skill,
-      course: courseTitle,
-      courseTitle: courseTitle,
-      title: courseTitle,
-      provider: providerStr,
-      priority: g.priority || (diffLevel >= 2 ? 'High' : 'Medium'),
-      priorityBadge: g.gapSeverity === 'Critical' ? 'badge-danger' : 'badge-warning',
-      score: scoreVal,
-      matchScore: scoreVal,
-      aiMatchScore: scoreVal,
-      duration: durationStr,
-      difficulty: difficultyStr,
-      expectedImprovement: gainStr,
-      expectedGain: gainStr,
-      reason: `Identified ${g.gapSeverity ? g.gapSeverity.toLowerCase() : 'skill'} deficit in ${g.skill} (Current: Level ${g.currentLevel}, Benchmark: Level ${g.requiredLevel}) relative to ${g.department} standard.`,
-      status: 'Recommended',
-      gapLevel: diffLevel,
-      currentLevel: g.currentLevel,
-      targetLevel: g.requiredLevel,
-      requiredSkills: [g.skill],
-    });
-  });
-
-  return recs;
-}
-
 function calculateCompetencyAverages(competencies, employeeSkills, employees) {
   const empMap = Object.fromEntries(employees.map(e => [e.id, e]));
 
-  return competencies.map((comp) => {
-    const matchingSkills = employeeSkills.filter((es) => {
+  return competencies.map(comp => {
+    const matchingEmpSkills = employeeSkills.filter(es => {
       const emp = empMap[es.employeeId];
       if (!emp) return false;
-      const isDept = emp.department === comp.department || String(emp.departmentId) === String(comp.departmentId);
-      const isSkill = es.skill === comp.skill || String(es.skillId) === String(comp.skillId);
-      return isDept && isSkill;
+      const deptMatch = emp.department === comp.department || String(emp.departmentId) === String(comp.departmentId);
+      const skillMatch = es.skill === comp.skill || String(es.skillId) === String(comp.skillId);
+      return deptMatch && skillMatch;
     });
 
-    let avgCur = comp.avgCurrentLevel;
-    if (matchingSkills.length > 0) {
-      const sum = matchingSkills.reduce((acc, s) => acc + (s.level || 3), 0);
-      avgCur = parseFloat((sum / matchingSkills.length).toFixed(1));
-    } else if (avgCur === undefined || avgCur === null) {
-      avgCur = 3.0;
-    }
-
-    const variance = parseFloat((avgCur - comp.requiredLevel).toFixed(1));
-    const status = variance >= 0 ? 'Met' : variance > -1 ? 'Low Gap' : variance > -2 ? 'Medium Gap' : 'High Gap';
+    const sum = matchingEmpSkills.reduce((acc, curr) => acc + (curr.level || 0), 0);
+    const count = matchingEmpSkills.length;
+    const computedAvg = count > 0 ? parseFloat((sum / count).toFixed(2)) : (comp.currentVal || 3.0);
+    const req = comp.requiredLevel || comp.targetVal || 4.0;
+    const variance = parseFloat((computedAvg - req).toFixed(2));
 
     return {
       ...comp,
-      avgCurrentLevel: avgCur,
-      variance,
-      gap: Math.max(0, parseFloat((comp.requiredLevel - avgCur).toFixed(1))),
-      status,
+      currentVal: computedAvg,
+      averageProficiency: computedAvg,
+      targetVal: req,
+      requiredLevel: req,
+      gapVariance: variance,
+      status: variance >= 0 ? 'Optimal' : variance >= -1 ? 'Moderate Gap' : 'Critical Deficit',
+      evaluatedEmployees: count || 4,
     };
   });
+}
+
+function calculateInitialRecommendations(gaps, trainings) {
+  return gaps.map((gap, idx) => {
+    const matchedTraining = trainings.find(t =>
+      t.recommendedForSkill === gap.skill ||
+      (t.name && t.name.toLowerCase().includes(gap.skill.toLowerCase()))
+    ) || trainings[idx % trainings.length];
+
+    const matchPct = Math.min(99, Math.max(75, 95 - (gap.gapDiff * 3)));
+
+    return {
+      id: idx + 1,
+      gapId: gap.id,
+      employeeId: gap.employeeId,
+      employee: gap.employee,
+      department: gap.department,
+      skill: gap.skill,
+      currentLevel: gap.currentLevel,
+      targetLevel: gap.requiredLevel,
+      gapSeverity: gap.gapSeverity,
+      courseTitle: matchedTraining?.name || `${gap.skill} Mastery & Production Architecture`,
+      trainingName: matchedTraining?.name || `${gap.skill} Mastery & Production Architecture`,
+      trainingId: matchedTraining?.id || 1,
+      provider: matchedTraining?.dept === 'Data Science' ? 'Coursera Enterprise' : 'Internal LMS',
+      duration: matchedTraining?.duration || '4 Weeks',
+      difficulty: matchedTraining?.difficulty || 'Advanced',
+      matchScore: matchPct,
+      matchScoreFormatted: `${matchPct}%`,
+      expectedProficiencyGain: matchedTraining?.expectedGain || `+${gap.gapDiff} Levels`,
+      expectedGain: matchedTraining?.expectedGain || `+${gap.gapDiff} Levels`,
+      status: 'Recommended',
+      priority: gap.priority || 'High',
+    };
+  });
+}
+
+function calculateDynamicVelocity(store, employeeId = null) {
+  const enrollments = store.learning_enrollments || [];
+  const milestones = store.learning_milestones || [];
+  const skillGains = store.skill_improvements || [];
+
+  const empEnrollments = employeeId
+    ? enrollments.filter(e => String(e.employeeId) === String(employeeId))
+    : enrollments;
+
+  const completedCount = empEnrollments.filter(e => e.status === 'Completed' || e.status === 'Certified').length;
+  const inProgressCount = empEnrollments.filter(e => e.status === 'In Progress').length;
+  const verifiedGainsCount = skillGains.filter(s => s.verified).length;
+
+  const totalLearningHours = (completedCount * 32) + (inProgressCount * 14) + 12;
+  const avgCompletionDays = Math.max(12, Math.round(24 - (completedCount * 2)));
+  const velocityIndex = Math.min(100, Math.max(50, 60 + (completedCount * 8) + (verifiedGainsCount * 6)));
+
+  const monthlyTrend = [
+    { month: 'Jan', coursesCompleted: 1, hoursStudied: 20, velocityScore: 68 },
+    { month: 'Feb', coursesCompleted: 1, hoursStudied: 24, velocityScore: 72 },
+    { month: 'Mar', coursesCompleted: 2, hoursStudied: 32, velocityScore: 78 },
+    { month: 'Apr', coursesCompleted: 2, hoursStudied: 30, velocityScore: 82 },
+    { month: 'May', coursesCompleted: Math.max(2, completedCount - 1), hoursStudied: 36, velocityScore: 86 },
+    { month: 'Jun', coursesCompleted: completedCount, hoursStudied: totalLearningHours, velocityScore: velocityIndex },
+  ];
+
+  return {
+    coursesCompletedTotal: completedCount || 4,
+    coursesInProgressTotal: inProgressCount || 2,
+    avgCompletionDays,
+    skillsImprovedCount: verifiedGainsCount || 3,
+    avgSkillLevelGain: 1.8,
+    totalLearningHours,
+    learningVelocityIndex: velocityIndex,
+    monthlyTrend,
+  };
 }
 
 function getInitialStoreState() {
   const computedCompetencies = calculateCompetencyAverages(SEED_COMPETENCIES, SEED_EMPLOYEE_SKILLS, SEED_EMPLOYEES);
   const initialGaps = calculateInitialGaps(SEED_EMPLOYEE_SKILLS, computedCompetencies, SEED_EMPLOYEES);
   const initialRecs = calculateInitialRecommendations(initialGaps, SEED_TRAININGS);
+  const initialCerts = normalizeCertificationsList(SEED_CERTIFICATIONS);
 
   return {
     departments: SEED_DEPARTMENTS,
@@ -155,6 +238,23 @@ function getInitialStoreState() {
     trainings: SEED_TRAININGS,
     gap_analysis: initialGaps,
     recommendations: initialRecs,
+
+    // Milestone 3: Mentorship & Knowledge Sharing
+    mentors: SEED_MENTORS,
+    mentorship_sessions: SEED_KNOWLEDGE_SESSIONS,
+    experts: SEED_EXPERTS,
+    communities: SEED_COMMUNITIES,
+    knowledge_resources: SEED_KNOWLEDGE_RESOURCES,
+    session_feedback: SEED_SESSION_FEEDBACK,
+    mentorship_requests: [],
+    expert_bookings: [],
+
+    // Milestone 3: Learning Progress Tracking
+    learning_enrollments: SEED_LEARNING_ENROLLMENTS,
+    learning_milestones: SEED_LEARNING_MILESTONES,
+    certifications: initialCerts,
+    skill_improvements: SEED_SKILL_IMPROVEMENTS,
+    learning_velocity: SEED_LEARNING_VELOCITY,
   };
 }
 
@@ -169,7 +269,28 @@ export function getStore() {
       localStorage.setItem(STORE_KEY, JSON.stringify(initial));
       return initial;
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+
+    // Guard: ensure all Milestone 3 collections exist even if previous cache was loaded
+    let needsResave = false;
+    const initial = getInitialStoreState();
+    Object.keys(initial).forEach((key) => {
+      if (parsed[key] === undefined) {
+        parsed[key] = initial[key];
+        needsResave = true;
+      }
+    });
+
+    // Ensure certs always have current days remaining calculated
+    if (parsed.certifications && Array.isArray(parsed.certifications)) {
+      parsed.certifications = normalizeCertificationsList(parsed.certifications);
+    }
+
+    if (needsResave) {
+      localStorage.setItem(STORE_KEY, JSON.stringify(parsed));
+    }
+
+    return parsed;
   } catch (err) {
     console.warn('[HybridStore] Error reading store, using initial seed:', err);
     return getInitialStoreState();
@@ -189,11 +310,15 @@ export function saveStore(store) {
 }
 
 /**
- * Returns a specific collection (e.g. 'skills', 'employees', 'departments').
+ * Returns a specific collection (e.g. 'skills', 'employees', 'mentors', 'learning_enrollments').
  */
 export function getCollection(collectionName) {
   const store = getStore();
-  return Array.isArray(store[collectionName]) ? store[collectionName] : [];
+  return Array.isArray(store[collectionName])
+    ? store[collectionName]
+    : store[collectionName] !== undefined
+    ? store[collectionName]
+    : [];
 }
 
 /**
@@ -248,6 +373,416 @@ export function deleteCollectionItem(collectionName, id) {
 }
 
 /**
+ * CROSS-MODULE INTEGRATION:
+ * Applies verified skill level gain from completing a training course.
+ * Automatically updates employee_skills, closes the gap in gap_analysis,
+ * updates recommendations, and marks the enrollment & improvement as verified!
+ */
+export function applySkillGainFromTraining(enrollmentId, employeeId, skillName, targetLevel = 4) {
+  const store = getStore();
+
+  // 1. Update or add employee skill
+  const empSkills = store.employee_skills || [];
+  const existingSkillIdx = empSkills.findIndex(
+    es => String(es.employeeId) === String(employeeId) && (es.skill === skillName || String(es.skillId) === String(skillName))
+  );
+
+  if (existingSkillIdx >= 0) {
+    empSkills[existingSkillIdx] = {
+      ...empSkills[existingSkillIdx],
+      level: targetLevel,
+      lastUpdated: new Date().toISOString().split('T')[0],
+    };
+  } else {
+    empSkills.push({
+      id: empSkills.length + 1,
+      employeeId: Number(employeeId),
+      skill: skillName,
+      level: targetLevel,
+      requiredLevel: targetLevel,
+      lastUpdated: new Date().toISOString().split('T')[0],
+    });
+  }
+  store.employee_skills = empSkills;
+
+  // 2. Mark enrollment as 100% completed & certified
+  if (store.learning_enrollments) {
+    store.learning_enrollments = store.learning_enrollments.map(en => {
+      if (String(en.id) === String(enrollmentId) || (String(en.employeeId) === String(employeeId) && en.skill === skillName)) {
+        return {
+          ...en,
+          progress: 100,
+          status: 'Certified',
+          statusBadge: 'badge-purple bg-purple-50 text-purple-700 border-purple-200',
+          certificateStatus: `Verified Certificate Issued (Level ${targetLevel})`,
+          verifiedGain: `+${(targetLevel - (en.currentLevelBefore || 2)).toFixed(1)} Levels (Achieved Level ${targetLevel})`,
+          milestonesCompleted: en.milestonesTotal || 5,
+        };
+      }
+      return en;
+    });
+  }
+
+  // 3. Mark skill improvement as verified
+  if (store.skill_improvements) {
+    store.skill_improvements = store.skill_improvements.map(si => {
+      if (String(si.employeeId) === String(employeeId) && si.skill === skillName) {
+        return {
+          ...si,
+          afterLevel: targetLevel,
+          afterScorePct: Math.round((targetLevel / 5) * 100),
+          status: 'Verified & Applied',
+          verified: true,
+          impact: `Successfully closed gap, target benchmark of Level ${targetLevel} reached!`,
+        };
+      }
+      return si;
+    });
+  }
+
+  // 4. Recalculate gaps, competency matrix, and recommendations
+  recalculateGapsAndDependencies(store);
+  saveStore(store);
+  return true;
+}
+
+/**
+ * Mentorship session registration action.
+ */
+export function registerForSession(sessionId, userId) {
+  const store = getStore();
+  const sessions = store.mentorship_sessions || [];
+
+  store.mentorship_sessions = sessions.map(s => {
+    if (String(s.id) === String(sessionId)) {
+      const regList = Array.isArray(s.registeredUserIds) ? s.registeredUserIds : [];
+      if (!regList.includes(userId)) {
+        const nextSeats = Math.min(s.totalSeats, (s.registeredSeats || 0) + 1);
+        return {
+          ...s,
+          registeredSeats: nextSeats,
+          registeredUserIds: [...regList, userId],
+        };
+      }
+    }
+    return s;
+  });
+
+  saveStore(store);
+  return true;
+}
+
+/**
+ * Mentorship session cancellation action.
+ */
+export function cancelSessionRegistration(sessionId, userId) {
+  const store = getStore();
+  const sessions = store.mentorship_sessions || [];
+
+  store.mentorship_sessions = sessions.map(s => {
+    if (String(s.id) === String(sessionId)) {
+      const regList = Array.isArray(s.registeredUserIds) ? s.registeredUserIds : [];
+      return {
+        ...s,
+        registeredSeats: Math.max(0, (s.registeredSeats || 0) - 1),
+        registeredUserIds: regList.filter(id => String(id) !== String(userId)),
+      };
+    }
+    return s;
+  });
+
+  saveStore(store);
+  return true;
+}
+
+/**
+ * Mentorship request management (create / cancel).
+ */
+export function createMentorshipRequest(requestData) {
+  const store = getStore();
+  const requests = store.mentorship_requests || [];
+  const existingIdx = requests.findIndex(
+    r => String(r.mentorId) === String(requestData.mentorId) && String(r.employeeId) === String(requestData.employeeId)
+  );
+
+  const newReq = {
+    ...requestData,
+    id: requestData.id || requests.length + 1,
+    status: 'Pending Review',
+    requestedAt: new Date().toISOString().split('T')[0],
+  };
+
+  if (existingIdx >= 0) {
+    requests[existingIdx] = newReq;
+  } else {
+    requests.push(newReq);
+  }
+
+  store.mentorship_requests = requests;
+  saveStore(store);
+  return newReq;
+}
+
+export function cancelMentorshipRequest(mentorId, employeeId) {
+  const store = getStore();
+  store.mentorship_requests = (store.mentorship_requests || []).filter(
+    r => !(String(r.mentorId) === String(mentorId) && String(r.employeeId) === String(employeeId))
+  );
+  saveStore(store);
+  return true;
+}
+
+/**
+ * Expert 1:1 Consultation booking management.
+ */
+export function bookExpertConsultation(bookingData) {
+  const store = getStore();
+  const bookings = store.expert_bookings || [];
+  const newBooking = {
+    ...bookingData,
+    id: bookingData.id || bookings.length + 1,
+    status: 'Confirmed',
+    bookedAt: new Date().toISOString().split('T')[0],
+  };
+  store.expert_bookings = [...bookings, newBooking];
+  saveStore(store);
+  return newBooking;
+}
+
+export function cancelExpertConsultation(expertId, employeeId) {
+  const store = getStore();
+  store.expert_bookings = (store.expert_bookings || []).filter(
+    b => !(String(b.expertId) === String(expertId) && String(b.employeeId) === String(employeeId))
+  );
+  saveStore(store);
+  return true;
+}
+
+/**
+ * Community membership toggle.
+ */
+export function toggleCommunityMembership(communityId, userId, isJoining) {
+  const store = getStore();
+  const communities = store.communities || [];
+
+  store.communities = communities.map(c => {
+    if (String(c.id) === String(communityId)) {
+      const userList = Array.isArray(c.joinedUserIds) ? c.joinedUserIds : (c.isJoined ? [userId] : []);
+      let updatedUserIds = userList;
+
+      if (isJoining) {
+        if (!updatedUserIds.includes(userId)) updatedUserIds = [...updatedUserIds, userId];
+      } else {
+        updatedUserIds = updatedUserIds.filter(id => String(id) !== String(userId));
+      }
+
+      return {
+        ...c,
+        isJoined: isJoining,
+        joinedUserIds: updatedUserIds,
+        membersCount: isJoining ? c.membersCount + 1 : Math.max(1, c.membersCount - 1),
+      };
+    }
+    return c;
+  });
+
+  saveStore(store);
+  return true;
+}
+
+/**
+ * Community discussions and resources addition.
+ */
+export function addCommunityDiscussion(communityId, discussion) {
+  const store = getStore();
+  store.communities = (store.communities || []).map(c => {
+    if (String(c.id) === String(communityId)) {
+      const discList = Array.isArray(c.discussions) ? c.discussions : [];
+      const newDisc = {
+        ...discussion,
+        id: discList.length + 1,
+        timestamp: 'Just now',
+        repliesCount: 0,
+        likesCount: 1,
+      };
+      return {
+        ...c,
+        discussions: [newDisc, ...discList],
+      };
+    }
+    return c;
+  });
+  saveStore(store);
+  return true;
+}
+
+export function addCommunityResource(communityId, resource) {
+  const store = getStore();
+  store.communities = (store.communities || []).map(c => {
+    if (String(c.id) === String(communityId)) {
+      const resList = Array.isArray(c.resources) ? c.resources : [];
+      const newRes = {
+        ...resource,
+        id: resList.length + 1,
+        size: '1.2 MB',
+      };
+      return {
+        ...c,
+        resources: [newRes, ...resList],
+      };
+    }
+    return c;
+  });
+  saveStore(store);
+  return true;
+}
+
+/**
+ * Resource bookmark toggle.
+ */
+export function toggleResourceBookmark(resourceId, userId) {
+  const store = getStore();
+  const resources = store.knowledge_resources || [];
+
+  store.knowledge_resources = resources.map(r => {
+    if (String(r.id) === String(resourceId)) {
+      const nextState = !r.isBookmarked;
+      return {
+        ...r,
+        isBookmarked: nextState,
+        likes: nextState ? (r.likes || 0) + 1 : Math.max(0, (r.likes || 1) - 1),
+      };
+    }
+    return r;
+  });
+
+  saveStore(store);
+  return true;
+}
+
+/**
+ * Feedback submission with live rating recalculation across mentors & experts.
+ */
+export function addSessionFeedbackItem(feedback) {
+  const store = getStore();
+  const feedbackList = store.session_feedback || [];
+  const newFeedback = {
+    ...feedback,
+    id: feedback.id || feedbackList.length + 1,
+    date: feedback.date || new Date().toISOString().split('T')[0],
+  };
+
+  store.session_feedback = [newFeedback, ...feedbackList];
+
+  // Update mentor and expert ratings
+  if (feedback.mentorName) {
+    const allMentorFeedbacks = store.session_feedback.filter(f => f.mentorName === feedback.mentorName);
+    if (allMentorFeedbacks.length > 0) {
+      const avg = (allMentorFeedbacks.reduce((acc, f) => acc + (f.rating || 5), 0) / allMentorFeedbacks.length).toFixed(1);
+      const parsedAvg = parseFloat(avg);
+
+      store.mentors = (store.mentors || []).map(m =>
+        m.name === feedback.mentorName ? { ...m, rating: parsedAvg, sessionsCount: (m.sessionsCount || 10) + 1 } : m
+      );
+      store.experts = (store.experts || []).map(e =>
+        e.name === feedback.mentorName ? { ...e, rating: parsedAvg, sessionsConducted: (e.sessionsConducted || 8) + 1 } : e
+      );
+    }
+  }
+
+  saveStore(store);
+  return newFeedback;
+}
+
+/**
+ * Milestone status toggle.
+ */
+export function toggleMilestoneCompletion(milestoneId) {
+  const store = getStore();
+  const milestones = store.learning_milestones || [];
+  let enrollmentToUpdate = null;
+
+  store.learning_milestones = milestones.map(m => {
+    if (String(m.id) === String(milestoneId)) {
+      const isDone = m.status === 'Completed';
+      const nextStatus = isDone ? 'In Progress' : 'Completed';
+      enrollmentToUpdate = m.enrollmentId;
+      return {
+        ...m,
+        status: nextStatus,
+        completedDate: nextStatus === 'Completed' ? new Date().toISOString().split('T')[0] : null,
+      };
+    }
+    return m;
+  });
+
+  // Update enrollment progress
+  if (enrollmentToUpdate && store.learning_enrollments) {
+    const courseMilestones = store.learning_milestones.filter(m => String(m.enrollmentId) === String(enrollmentToUpdate));
+    const completedCount = courseMilestones.filter(m => m.status === 'Completed').length;
+    const totalCount = courseMilestones.length || 5;
+    const progressPct = Math.min(100, Math.max(0, Math.round((completedCount / totalCount) * 100)));
+
+    store.learning_enrollments = store.learning_enrollments.map(en => {
+      if (String(en.id) === String(enrollmentToUpdate)) {
+        const isComplete = progressPct === 100;
+        return {
+          ...en,
+          progress: progressPct,
+          milestonesCompleted: completedCount,
+          status: isComplete ? 'Completed' : progressPct > 0 ? 'In Progress' : 'Not Started',
+          statusBadge: isComplete
+            ? 'badge-success bg-emerald-50 text-emerald-700 border-emerald-200'
+            : progressPct > 0
+            ? 'badge-warning bg-amber-50 text-amber-700 border-amber-200'
+            : 'badge-neutral bg-slate-50 text-slate-700 border-slate-200',
+          certificateStatus: isComplete ? 'Eligible for Verification' : 'In Progress',
+        };
+      }
+      return en;
+    });
+  }
+
+  // Recalculate velocity dynamically
+  store.learning_velocity = calculateDynamicVelocity(store);
+
+  saveStore(store);
+  return true;
+}
+
+/**
+ * Certification renewal action.
+ */
+export function renewCertification(certId) {
+  const store = getStore();
+  const certs = store.certifications || [];
+
+  const today = new Date();
+  const issueDateStr = today.toISOString().split('T')[0];
+  const expiryDate = new Date(today);
+  expiryDate.setFullYear(today.getFullYear() + 3);
+  const expiryDateStr = expiryDate.toISOString().split('T')[0];
+
+  store.certifications = certs.map(c => {
+    if (String(c.id) === String(certId)) {
+      return {
+        ...c,
+        status: 'Valid',
+        statusBadge: 'badge-success bg-emerald-50 text-emerald-700 border-emerald-200',
+        issueDate: issueDateStr,
+        expiryDate: expiryDateStr,
+        daysRemaining: 1095,
+        renewalRequired: false,
+      };
+    }
+    return c;
+  });
+
+  saveStore(store);
+  return true;
+}
+
+/**
  * Recalculates gaps, recommendations, and analytics based on latest employee skills and competencies.
  */
 function recalculateGapsAndDependencies(store) {
@@ -259,6 +794,7 @@ function recalculateGapsAndDependencies(store) {
   store.competencies = calculateCompetencyAverages(competencies, employeeSkills, employees);
   store.gap_analysis = calculateInitialGaps(employeeSkills, store.competencies, employees);
   store.recommendations = calculateInitialRecommendations(store.gap_analysis, trainings);
+  store.learning_velocity = calculateDynamicVelocity(store);
 }
 
 /**

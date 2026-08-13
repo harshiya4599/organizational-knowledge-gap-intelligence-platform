@@ -50,6 +50,10 @@ const PERMISSION_MATRIX = {
     canViewGapAnalysis: true,
     canViewRecommendations: true,
     canViewNotifications: true,
+    canViewMentorship: true,
+    canViewLearningProgress: true,
+    canViewTeamLearning: false,
+    canManageKnowledgeSharing: false,
 
     // Restricted
     canViewEmployees: false,
@@ -74,6 +78,10 @@ const PERMISSION_MATRIX = {
     canViewRecommendations: true,
     canViewReports: true,
     canViewNotifications: true,
+    canViewMentorship: true,
+    canViewLearningProgress: true,
+    canViewTeamLearning: true,
+    canManageKnowledgeSharing: false,
 
     // Restricted
     canViewSkillsCatalog: false,
@@ -103,6 +111,10 @@ const PERMISSION_MATRIX = {
     canViewNotifications: true,
     canViewAnalytics: true,
     canAccessSettings: true,
+    canViewMentorship: true,
+    canViewLearningProgress: true,
+    canViewTeamLearning: true,
+    canManageKnowledgeSharing: true,
   },
 };
 

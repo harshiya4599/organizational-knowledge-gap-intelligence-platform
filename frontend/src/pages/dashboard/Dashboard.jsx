@@ -96,21 +96,26 @@ export default function Dashboard() {
   const categories  = ['All', 'Technical', 'Data Science', 'Management', 'Finance', 'Marketing', 'Operations'];
 
   // Calculate Employee-specific metrics from hybridStore
+  const targetEmpId = user?.employeeId || user?.id || 3;
   const allEmpSkills = getCollection('employee_skills');
-  const userEmpSkills = allEmpSkills.filter(es => String(es.employeeId) === String(user?.employeeId || user?.id || 1));
+  const userEmpSkills = allEmpSkills.filter(es => String(es.employeeId) === String(targetEmpId));
   const effectiveEmpSkills = userEmpSkills.length > 0 ? userEmpSkills : allEmpSkills.slice(0, 5);
 
   const empAvgProf = effectiveEmpSkills.reduce((acc, s) => acc + (s.level || s.currentVal || 3), 0) / (effectiveEmpSkills.length || 1);
   const empPersonalScore = Math.min(100, Math.max(0, Math.round((empAvgProf / 5.0) * 100))) || 76;
 
   const allGaps = getCollection('gap_analysis');
-  const userGaps = allGaps.filter(g => String(g.employeeId) === String(user?.employeeId || user?.id || 1));
-  const effectiveGaps = userGaps.length > 0 ? userGaps : allGaps.slice(0, 2);
+  const userGaps = allGaps.filter(g => String(g.employeeId) === String(targetEmpId));
+  const effectiveGaps = userGaps.length > 0 ? userGaps : [];
   const empDeficitRate = effectiveEmpSkills.length > 0
     ? Math.round((effectiveGaps.length / effectiveEmpSkills.length) * 100)
-    : 22;
+    : 0;
 
-  const empCompletionRate = 85;
+  const allEnrollments = getCollection('learning_enrollments');
+  const userEnrollments = allEnrollments.filter(e => String(e.employeeId) === String(targetEmpId));
+  const empCompletionRate = userEnrollments.length > 0
+    ? Math.round(userEnrollments.reduce((acc, e) => acc + (e.progress || 0), 0) / userEnrollments.length)
+    : 85;
   const empAssignedCompetencies = effectiveEmpSkills.length || 4;
 
   const empGrowthTrend = [

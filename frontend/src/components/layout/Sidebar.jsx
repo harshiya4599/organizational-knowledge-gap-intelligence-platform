@@ -113,6 +113,33 @@ const Icons = {
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
     </svg>
   ),
+  mentorship: (
+    <svg className="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+  ),
+  communities: (
+    <svg className="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="2" y1="12" x2="22" y2="12"/>
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+    </svg>
+  ),
+  learningProgress: (
+    <svg className="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+      <polyline points="22 4 12 14.01 9 11.01"/>
+    </svg>
+  ),
+  certifications: (
+    <svg className="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="8" r="7"/>
+      <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+    </svg>
+  ),
 };
 
 export default function Sidebar({ mobileOpen, onCloseMobile }) {
@@ -131,12 +158,25 @@ export default function Sidebar({ mobileOpen, onCloseMobile }) {
         ],
       },
       {
-        label: 'My Skills & Learning',
+        label: 'My Skills & Diagnostics',
         items: [
           { to: '/employee-skills',   label: 'My Skills',          icon: Icons.employeeSkills },
           { to: '/competency-matrix', label: 'Competency Matrix', icon: Icons.competency },
           { to: '/gap-analysis',      label: 'Gap Analysis',      icon: Icons.gap },
           { to: '/recommendations',   label: 'Recommendations',   icon: Icons.recommendations },
+        ],
+      },
+      {
+        label: 'Knowledge & Mentorship',
+        items: [
+          { to: '/knowledge-sharing', label: 'Mentorship & Guilds', icon: Icons.mentorship },
+        ],
+      },
+      {
+        label: 'Learning & Certifications',
+        items: [
+          { to: '/learning-progress', label: 'Learning Progress',  icon: Icons.learningProgress },
+          { to: '/certifications',    label: 'My Certifications',  icon: Icons.certifications },
         ],
       }
     );
@@ -154,6 +194,7 @@ export default function Sidebar({ mobileOpen, onCloseMobile }) {
         items: [
           { to: '/employees',   label: 'Employees',   icon: Icons.employees },
           { to: '/departments', label: 'Departments', icon: Icons.departments },
+          { to: '/reports',     label: 'Reports',     icon: Icons.reports },
         ],
       },
       {
@@ -162,7 +203,18 @@ export default function Sidebar({ mobileOpen, onCloseMobile }) {
           { to: '/competency-matrix', label: 'Team Competencies', icon: Icons.competency },
           { to: '/gap-analysis',      label: 'Team Gap Analysis', icon: Icons.gap },
           { to: '/recommendations',   label: 'Recommendations',  icon: Icons.recommendations },
-          { to: '/reports',           label: 'Reports',          icon: Icons.reports },
+        ],
+      },
+      {
+        label: 'Knowledge & Mentorship',
+        items: [
+          { to: '/knowledge-sharing', label: 'Mentorship & Guilds', icon: Icons.mentorship },
+        ],
+      },
+      {
+        label: 'Team Learning Progress',
+        items: [
+          { to: '/learning-progress', label: 'Team Learning & Certs', icon: Icons.learningProgress },
         ],
       }
     );
@@ -196,11 +248,23 @@ export default function Sidebar({ mobileOpen, onCloseMobile }) {
         ],
       },
       {
+        label: 'Knowledge Sharing & Mentorship',
+        items: [
+          { to: '/knowledge-sharing', label: 'Mentorship & Guilds', icon: Icons.mentorship },
+        ],
+      },
+      {
+        label: 'Learning Progress & Compliance',
+        items: [
+          { to: '/learning-progress',   label: 'Learning & Certifications', icon: Icons.learningProgress },
+          { to: '/training-management', label: 'Training Management',       icon: Icons.training },
+        ],
+      },
+      {
         label: 'Administration & Governance',
         items: [
           { to: '/user-management',     label: 'User Management',     icon: Icons.users },
           { to: '/role-management',     label: 'Role Management',     icon: Icons.roles },
-          { to: '/training-management', label: 'Training Management', icon: Icons.training },
           { to: '/analytics',           label: 'Analytics Engine',    icon: Icons.analytics },
           { to: '/system-settings',     label: 'System Settings',     icon: Icons.settings },
         ],
@@ -275,9 +339,9 @@ export default function Sidebar({ mobileOpen, onCloseMobile }) {
           </span>
         </div>
         <p className="text-[10px] text-slate-300 font-normal leading-relaxed">
-          {currentRole === ROLES.EMPLOYEE && 'Personal skill score & learning roadmap active.'}
-          {currentRole === ROLES.MANAGER && 'Team health & department analytics active.'}
-          {currentRole === ROLES.ADMINISTRATOR && 'Full platform governance & RBAC administration active.'}
+          {currentRole === ROLES.EMPLOYEE && 'Personal mentorship, milestones & learning roadmap active.'}
+          {currentRole === ROLES.MANAGER && 'Team health, department analytics & mentorship active.'}
+          {currentRole === ROLES.ADMINISTRATOR && 'Full platform governance, guilds & learning compliance active.'}
         </p>
       </div>
     </div>
