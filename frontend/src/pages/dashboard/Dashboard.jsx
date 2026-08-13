@@ -15,7 +15,7 @@ import EmptyState    from '../../components/feedback/EmptyState';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { currentRole, roleBadge } = useRole();
+  const { currentRole, roleBadge, isEmployee, isManager, isAdmin } = useRole();
 
   const [data, setData]               = useState(null);
   const [teamMembers, setTeamMembers] = useState([]);
@@ -123,7 +123,7 @@ export default function Dashboard() {
   ];
 
   // ── 1. EMPLOYEE ROLE DASHBOARD ───────────────────────────────
-  if (currentRole === ROLES.EMPLOYEE) {
+  if (isEmployee || currentRole === ROLES.EMPLOYEE) {
     return (
       <div className="page-container space-y-6">
         {/* Header */}
@@ -227,7 +227,7 @@ export default function Dashboard() {
   }
 
   // ── 2. MANAGER ROLE DASHBOARD ────────────────────────────────
-  if (currentRole === ROLES.MANAGER) {
+  if (isManager || currentRole === ROLES.MANAGER) {
     return (
       <div className="page-container space-y-6">
         {/* Header */}

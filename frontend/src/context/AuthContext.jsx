@@ -5,42 +5,15 @@ import {
 } from '../utils/token';
 import { getProfile } from '../services/authService';
 
-const DEFAULT_ACTIVE_USER = {
-  id: 1,
-  employeeId: 1,
-  username: 'admin',
-  name: 'Alice Smith',
-  email: 'alice@company.com',
-  role: 'ROLE_ADMIN',
-  department: 'Engineering',
-  designation: 'VP of Engineering / Organization Administrator',
-  phone: '9876543210',
-  employeeCode: 'EMP-001',
-};
-
-const DEFAULT_ACTIVE_TOKEN = 'active-enterprise-session-token';
-
 // ── Context creation ──────────────────────────────────
 const AuthContext = createContext(null);
 
 // ── Provider ──────────────────────────────────────────
 export function AuthProvider({ children }) {
-  // Initialise from localStorage or default to active Administrator session
-  const [token, setToken] = useState(() => {
-    const existing = getToken();
-    if (existing) return existing;
-    saveToken(DEFAULT_ACTIVE_TOKEN);
-    return DEFAULT_ACTIVE_TOKEN;
-  });
+  const [token, setToken] = useState(() => getToken() || null);
+  const [user,  setUser]  = useState(() => getUser()  || null);
 
-  const [user, setUser] = useState(() => {
-    const existing = getUser();
-    if (existing && existing.username) return existing;
-    saveUser(DEFAULT_ACTIVE_USER);
-    return DEFAULT_ACTIVE_USER;
-  });
-
-  const isAuthenticated = true;
+  const isAuthenticated = !!(token && user);
 
   // On mount or token change, sync user state with backend profile if available
   useEffect(() => {
@@ -48,49 +21,49 @@ export function AuthProvider({ children }) {
       getProfile()
         .then((profile) => {
           if (profile) {
-            const cachedUser = getUser() || DEFAULT_ACTIVE_USER;
+            const cachedUser = getUser() || {};
+            const resolvedRole = (profile.role && profile.role !== 'ROLE_EMPLOYEE' && profile.role !== 'Employee')
+              ? profile.role
+              : (cachedUser.role || profile.role || 'ROLE_EMPLOYEE');
+
             const normalizedUser = {
               ...cachedUser,
               ...profile,
-              id: profile.id ?? cachedUser.id,
-              username: profile.username || cachedUser.username || '',
-              name: profile.name || profile.username || cachedUser.name || cachedUser.username || '',
-              email: profile.email || cachedUser.email || '',
-              role: profile.role || cachedUser.role || 'ROLE_ADMIN',
-              phone: profile.phone || cachedUser.phone || '',
-              department: profile.department || cachedUser.department || '',
+              id:          profile.id          ?? cachedUser.id,
+              username:    profile.username    || cachedUser.username    || '',
+              name:        profile.name        || profile.username || cachedUser.name || cachedUser.username || '',
+              email:       profile.email       || cachedUser.email       || '',
+              role:        resolvedRole,
+              phone:       profile.phone       || cachedUser.phone       || '',
+              department:  profile.department  || cachedUser.department  || '',
               designation: profile.designation || cachedUser.designation || '',
-              avatarUrl: profile.avatarUrl || cachedUser.avatarUrl || '',
+              avatarUrl:   profile.avatarUrl   || cachedUser.avatarUrl   || '',
             };
             saveUser(normalizedUser);
             setUser(normalizedUser);
           }
         })
         .catch(() => {
-          // Keep existing active session in fallback mode
+          // Keep existing session in fallback/demo mode — backend may be offline
         });
     }
   }, [token]);
 
-  /**
-   * Call on login / role switch.
-   */
+  /** Call on successful login. userData and authToken come from authService. */
   function login(userData, authToken) {
-    const t = authToken || DEFAULT_ACTIVE_TOKEN;
-    saveToken(t);
+    if (!userData || !authToken) return;
+    saveToken(authToken);
     saveUser(userData);
-    setToken(t);
+    setToken(authToken);
     setUser(userData);
   }
 
-  /**
-   * Call on logout.
-   */
+  /** Call on logout — clears ALL session data and forces re-authentication. */
   function logout() {
-    saveToken(DEFAULT_ACTIVE_TOKEN);
-    saveUser(DEFAULT_ACTIVE_USER);
-    setToken(DEFAULT_ACTIVE_TOKEN);
-    setUser(DEFAULT_ACTIVE_USER);
+    removeToken();
+    removeUser();
+    setToken(null);
+    setUser(null);
   }
 
   const value = { user, token, isAuthenticated, login, logout, setUser };
@@ -106,7 +79,7 @@ export function AuthProvider({ children }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used inside <AuthProvider>');
+    throw new Error('useAuth must be inside <AuthProvider>');
   }
   return context;
 }

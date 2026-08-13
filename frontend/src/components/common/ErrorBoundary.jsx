@@ -2,67 +2,52 @@ import React from 'react';
 
 /**
  * ErrorBoundary
- * Catches any unexpected JS rendering errors in child components
- * and renders a clean error view with diagnostic information.
+ * Catches unexpected JS rendering errors in child components.
+ * Shows a clean, user-friendly message — NEVER exposes stack traces.
  */
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
+    this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
+  static getDerivedStateFromError() {
+    return { hasError: true };
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('[ErrorBoundary caught error]:', error, errorInfo);
-    this.setState({ errorInfo });
+    // Log to console for developer visibility — never shown to users
+    console.error('[ErrorBoundary]', error, errorInfo);
   }
 
-  handleReload = () => {
-    this.setState({ hasError: false, error: null, errorInfo: null });
-    window.location.reload();
+  handleRetry = () => {
+    this.setState({ hasError: false });
   };
 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-[400px] flex flex-col items-center justify-center p-8 text-center bg-white rounded-2xl border border-slate-200 shadow-sm animate-fadeIn my-6 max-w-2xl mx-auto">
-          <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-2xl mb-4 text-amber-600 shadow-sm">
+        <div className="min-h-[300px] flex flex-col items-center justify-center p-8 text-center bg-white rounded-2xl border border-slate-200 shadow-sm my-6 max-w-lg mx-auto">
+          <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-2xl mb-4 shadow-sm">
             ⚠️
           </div>
-          <h2 className="text-xl font-bold text-slate-900 mb-2">Display Notice</h2>
-          <p className="text-sm text-slate-500 max-w-md mb-6 leading-relaxed">
-            The requested module experienced a temporary rendering issue. Click below to refresh and reload presentation data.
+          <h2 className="text-lg font-bold text-slate-900 mb-2">Something went wrong</h2>
+          <p className="text-sm text-slate-500 max-w-xs mb-6 leading-relaxed">
+            Something went wrong while loading this section. Please try again.
           </p>
-
-          {/* Diagnostic Error Details */}
-          {this.state.error && (
-            <div className="w-full text-left bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6 text-xs text-slate-700 font-mono overflow-x-auto max-h-48">
-              <p className="font-bold text-red-600 mb-1">{this.state.error?.toString()}</p>
-              {this.state.errorInfo?.componentStack && (
-                <pre className="text-[10px] text-slate-500 whitespace-pre-wrap">{this.state.errorInfo.componentStack}</pre>
-              )}
-            </div>
-          )}
-
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={this.handleReload}
+              onClick={this.handleRetry}
               className="btn-primary text-xs flex items-center gap-2"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
                 <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
               </svg>
-              Reload Page Data
+              Retry
             </button>
-            <a
-              href="/dashboard"
-              className="btn-outline text-xs"
-            >
+            <a href="/dashboard" className="btn-outline text-xs">
               Return to Dashboard
             </a>
           </div>

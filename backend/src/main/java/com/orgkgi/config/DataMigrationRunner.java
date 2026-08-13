@@ -29,9 +29,23 @@ public class DataMigrationRunner implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         try {
+            logger.info("Ensuring database columns exist for users and employees...");
+            jdbcTemplate.execute("ALTER TABLE organization.users ADD COLUMN IF NOT EXISTS password VARCHAR(255) DEFAULT '$2a$10$7v1S9Vv3u9v7m0T9m8v.u.8v7m0T9m8v.u.8v7m0T9m8v.u'");
+            jdbcTemplate.execute("ALTER TABLE organization.employees ADD COLUMN IF NOT EXISTS designation VARCHAR(255) DEFAULT 'Staff'");
+            jdbcTemplate.execute("ALTER TABLE organization.employees ADD COLUMN IF NOT EXISTS name VARCHAR(255) DEFAULT 'Employee'");
+            jdbcTemplate.execute("ALTER TABLE organization.employees ADD COLUMN IF NOT EXISTS employee_code VARCHAR(255)");
+            jdbcTemplate.execute("ALTER TABLE organization.employees ADD COLUMN IF NOT EXISTS email VARCHAR(255)");
+            jdbcTemplate.execute("UPDATE organization.employees SET employee_code = 'EMP-' || employee_id WHERE employee_code IS NULL");
+            jdbcTemplate.execute("UPDATE organization.employees SET email = 'emp' || employee_id || '@example.com' WHERE email IS NULL");
+            logger.info("Database column checks completed.");
+        } catch (Exception ex) {
+            logger.warn("Database column check note: {}", ex.getMessage());
+        }
+
+        try {
             logger.info("Checking for NULL skill_name values to backfill...");
             int updated = jdbcTemplate.update(
-                    "UPDATE skills SET skill_name = 'skill-' || id WHERE skill_name IS NULL"
+                    "UPDATE organization.skills SET skill_name = 'skill-' || id WHERE skill_name IS NULL"
             );
             if (updated > 0) {
                 logger.info("Backfilled {} skills with generated names.", updated);

@@ -34,7 +34,7 @@ public class User implements UserDetails {
 
     @NotBlank(message = "Password is required")
     @Size(min = 8, max = 100, message = "Password must contain at least 8 characters")
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String password;
 
     @NotNull(message = "Role is required")

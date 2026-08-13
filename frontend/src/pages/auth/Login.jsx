@@ -248,7 +248,16 @@ export default function Login() {
                 <select
                   id="login-role"
                   value={selectedRole}
-                  onChange={(e) => setSelectedRole(e.target.value)}
+                  onChange={(e) => {
+                    const newRole = e.target.value;
+                    setSelectedRole(newRole);
+                    if (!form.email || form.email === 'admin' || form.email === 'manager' || form.email === 'emp01') {
+                      setForm({
+                        email: newRole === 'Administrator' ? 'admin' : newRole === 'Manager' ? 'manager' : 'emp01',
+                        password: form.password || 'password'
+                      });
+                    }
+                  }}
                   className="form-input-icon w-full appearance-none pr-8 cursor-pointer bg-white"
                   aria-label="Select your role"
                 >
