@@ -10,7 +10,6 @@ import {
   getTeamLearningProgress,
   applyVerifiedSkillGain,
   toggleMilestone,
-  renewCert,
 } from '../../services/learningProgressService';
 import { subscribeToStore, getCollection } from '../../utils/hybridStore';
 import SummaryCard from '../../components/dashboard/SummaryCard';
@@ -41,7 +40,6 @@ export default function LearningProgressView({ initialTab = 'enrollments' }) {
   // Filters & Sub-views
   const [statusFilter, setStatusFilter] = useState('All');
   const [platformFilter, setPlatformFilter] = useState('All');
-  const [certStatusFilter, setCertStatusFilter] = useState('All');
   const [teamDeptFilter, setTeamDeptFilter] = useState('All');
 
   // Interactive Milestone Viewer Modal
@@ -102,9 +100,6 @@ export default function LearningProgressView({ initialTab = 'enrollments' }) {
     return matchesStatus && matchesPlatform;
   });
 
-  const displayedCerts = certifications.filter(c => {
-    return certStatusFilter === 'All' || c.status === certStatusFilter;
-  });
 
   const displayedTeam = teamProgress.filter(t => {
     return teamDeptFilter === 'All' || t.employee.department === teamDeptFilter;
@@ -159,13 +154,13 @@ export default function LearningProgressView({ initialTab = 'enrollments' }) {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="page-header-title text-2xl font-extrabold">
-              Learning Progress, Milestones &amp; Certifications
+              Learning Progress &amp; Milestones
             </h1>
             <span className="badge-blue text-xs font-bold">Module 6</span>
             <span className={roleBadge.badgeClass}>{roleBadge.label} View</span>
           </div>
           <p className="page-header-subtitle">
-            Tracking training course milestones, post-training skill proficiency gains, certification expirations, and team velocity.
+            Tracking training course milestones, post-training skill proficiency gains, and team learning velocity.
           </p>
         </div>
 
@@ -210,11 +205,10 @@ export default function LearningProgressView({ initialTab = 'enrollments' }) {
       {/* ── Tab Navigation ────────────────────────────────────── */}
       <div className="panel overflow-hidden">
         <div className="w-full bg-slate-50 border-b border-slate-200 px-4 sm:px-6 pt-2">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2">
             {[
               { id: 'enrollments',   label: 'Courses & Milestones', icon: '📚' },
               { id: 'skill-gains',   label: 'Post-Training Skill Gains', icon: '⭐' },
-              { id: 'certifications',label: 'Certifications & Renewals', icon: '📜' },
               { id: 'velocity',      label: 'Learning Velocity Analytics', icon: '📊' },
               { id: 'team-progress', label: isManager || isAdmin ? 'Team Learning Oversight' : 'Personal Benchmark', icon: '👥' },
             ].map((tab) => (
@@ -447,107 +441,6 @@ export default function LearningProgressView({ initialTab = 'enrollments' }) {
             </div>
           )}
 
-          {/* ================================================================ */}
-          {/* TAB 3: CERTIFICATIONS & EXPIRY TRACKING                          */}
-          {/* ================================================================ */}
-          {activeTab === 'certifications' && (
-            <div className="space-y-6">
-              {/* Expiry Alert Warning Banner if any cert is expiring */}
-              {expiringCertsCount > 0 && (
-                <div className="p-4 bg-amber-50 border border-amber-300 rounded-2xl flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">⚠️</span>
-                    <div>
-                      <h4 className="text-sm font-bold text-amber-900">
-                        {expiringCertsCount} Certification(s) Require Renewal Action
-                      </h4>
-                      <p className="text-xs text-amber-800">
-                        Keep credentials active to maintain organization compliance and client project eligibility.
-                      </p>
-                    </div>
-                  </div>
-                  <span className="badge-warning text-xs font-bold">Action Required</span>
-                </div>
-              )}
-
-              {/* Cert Filters */}
-              <div className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
-                <select
-                  value={certStatusFilter}
-                  onChange={(e) => setCertStatusFilter(e.target.value)}
-                  className="form-select text-xs w-auto"
-                >
-                  <option value="All">All Certification Statuses</option>
-                  <option value="Valid">Valid (Compliant)</option>
-                  <option value="Expiring Soon">Expiring Soon (&le; 60 Days)</option>
-                  <option value="Expired">Expired</option>
-                </select>
-                <span className="text-xs text-slate-500 font-semibold">{displayedCerts.length} Verified Credentials</span>
-              </div>
-
-              {/* Certifications Table */}
-              <div className="table-container">
-                <table className="table-base">
-                  <thead>
-                    <tr>
-                      <th className="table-th">CERTIFICATION</th>
-                      <th className="table-th">ISSUING BODY</th>
-                      <th className="table-th">ISSUE DATE</th>
-                      <th className="table-th">EXPIRY DATE</th>
-                      <th className="table-th text-center">DAYS REMAINING</th>
-                      <th className="table-th text-center">STATUS</th>
-                      <th className="table-th text-right">ACTION</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {displayedCerts.map((cert) => (
-                      <tr key={cert.id} className="table-row">
-                        <td className="table-td">
-                          <div className="flex items-center gap-2.5">
-                            <span className="text-xl">{cert.icon}</span>
-                            <div>
-                              <p className="font-bold text-slate-900 text-xs">{cert.certificationName}</p>
-                              <p className="text-[10px] text-slate-400 font-mono">ID: {cert.credentialId}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="table-td text-xs font-semibold text-slate-700">{cert.issuingOrganization}</td>
-                        <td className="table-td text-xs text-slate-500">{cert.issueDate}</td>
-                        <td className="table-td text-xs text-slate-500 font-semibold">{cert.expiryDate}</td>
-                        <td className="table-td text-center">
-                          {cert.daysRemaining < 0 ? (
-                            <span className="text-xs font-bold text-red-600">Expired {Math.abs(cert.daysRemaining)}d ago</span>
-                          ) : (
-                            <span className={`text-xs font-bold ${cert.daysRemaining <= 60 ? 'text-amber-600' : 'text-slate-700'}`}>
-                              {cert.daysRemaining} Days
-                            </span>
-                          )}
-                        </td>
-                        <td className="table-td text-center">
-                          <span className={`${cert.statusBadge} text-xs font-bold py-0.5 px-2.5 rounded-full border`}>
-                            {cert.status}
-                          </span>
-                        </td>
-                        <td className="table-td text-right">
-                          {cert.renewalRequired || cert.status === 'Expiring Soon' || cert.status === 'Expired' ? (
-                            <button
-                              type="button"
-                              onClick={() => handleRenewCert(cert)}
-                              className="btn-primary text-xs py-1.5 px-3 bg-amber-600 hover:bg-amber-700 border-amber-600"
-                            >
-                              🔄 Renew Cert
-                            </button>
-                          ) : (
-                            <span className="text-xs font-bold text-emerald-600">✓ Verified</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
 
           {/* ================================================================ */}
           {/* TAB 4: LEARNING VELOCITY ANALYTICS                              */}

@@ -27,6 +27,7 @@ import DepartmentSkillMatrix from '../pages/skills/DepartmentSkillMatrix';
 // Milestone 3: Knowledge-Sharing, Mentorship & Learning Progress Tracking
 import KnowledgeSharingHub   from '../pages/mentorship/KnowledgeSharingHub';
 import LearningProgressView  from '../pages/learning/LearningProgressView';
+import CertificationsPage    from '../pages/learning/CertificationsPage';
 
 // Admin & Governance pages
 import UserManagement     from '../pages/admin/UserManagement';
@@ -71,9 +72,9 @@ export default function AppRoutes() {
           <Route path="/communities"         element={<KnowledgeSharingHub initialTab="communities" />} />
           <Route path="/knowledge-resources" element={<KnowledgeSharingHub initialTab="resources" />} />
 
-          {/* Milestone 3: Learning Progress Tracking, Milestones & Certifications */}
+          {/* Milestone 3: Learning Progress Tracking & Milestones */}
           <Route path="/learning-progress"   element={<LearningProgressView initialTab="enrollments" />} />
-          <Route path="/certifications"      element={<LearningProgressView initialTab="certifications" />} />
+          <Route path="/certifications"      element={<CertificationsPage />} />
           <Route path="/learning-analytics"  element={<LearningProgressView initialTab="velocity" />} />
 
           {/* Manager & Admin Modules */}

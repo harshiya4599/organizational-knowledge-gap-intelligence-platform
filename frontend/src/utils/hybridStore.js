@@ -32,7 +32,7 @@ import {
   SEED_LEARNING_VELOCITY,
 } from '../data/seedData';
 
-const STORE_KEY = 'kg_hybrid_store_v5';
+const STORE_KEY = 'kg_hybrid_store_v6';
 const EVENT_NAME = 'kg_data_sync_event';
 
 /**
