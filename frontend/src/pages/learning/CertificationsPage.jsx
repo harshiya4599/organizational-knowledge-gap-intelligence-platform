@@ -776,7 +776,6 @@ export default function CertificationsPage() {
         <div>
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="page-header-title text-2xl font-extrabold">My Certifications</h1>
-            <span className="badge-blue text-xs font-bold">Module 6</span>
             <span className={roleBadge.badgeClass}>{roleBadge.label} View</span>
           </div>
           <p className="page-header-subtitle">

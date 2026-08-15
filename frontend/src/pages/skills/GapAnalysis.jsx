@@ -159,7 +159,6 @@ export default function GapAnalysis() {
             <h1 className="page-header-title text-2xl font-extrabold">
               {isEmployeeView ? 'My Knowledge Gap Diagnostics' : 'Knowledge Gap Analysis Engine'}
             </h1>
-            <span className="badge-purple text-xs font-bold">Module 4</span>
             {isEmployeeView && <span className="badge-blue text-xs font-bold">Personal Diagnostic View</span>}
           </div>
           <p className="page-header-subtitle">

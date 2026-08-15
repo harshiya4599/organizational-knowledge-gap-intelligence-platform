@@ -345,7 +345,6 @@ export default function KnowledgeSharingHub() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="page-header-title">Knowledge Sharing, Mentorship &amp; Communities</h1>
-            <span className="badge-purple">Module 5</span>
             <span className={roleBadge.badgeClass}>{roleBadge.label} View</span>
           </div>
           <p className="page-header-subtitle">

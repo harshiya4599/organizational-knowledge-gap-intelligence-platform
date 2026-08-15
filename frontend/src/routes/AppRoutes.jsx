@@ -28,12 +28,13 @@ import DepartmentSkillMatrix from '../pages/skills/DepartmentSkillMatrix';
 import KnowledgeSharingHub   from '../pages/mentorship/KnowledgeSharingHub';
 import LearningProgressView  from '../pages/learning/LearningProgressView';
 import CertificationsPage    from '../pages/learning/CertificationsPage';
+import AssessmentsView       from '../pages/learning/AssessmentsView';
+import NotificationsView     from '../pages/notifications/NotificationsView';
 
 // Admin & Governance pages
 import UserManagement     from '../pages/admin/UserManagement';
 import RoleManagement     from '../pages/admin/RoleManagement';
 import TrainingManagement from '../pages/admin/TrainingManagement';
-import SystemSettings     from '../pages/admin/SystemSettings';
 import Reports            from '../pages/reports/Reports';
 import AnalyticsView      from '../pages/analytics/AnalyticsView';
 
@@ -77,6 +78,10 @@ export default function AppRoutes() {
           <Route path="/certifications"      element={<CertificationsPage />} />
           <Route path="/learning-analytics"  element={<LearningProgressView initialTab="velocity" />} />
 
+          {/* Module 8 & Module 9: Assessments & Notifications */}
+          <Route path="/assessments"         element={<AssessmentsView />} />
+          <Route path="/notifications"       element={<NotificationsView />} />
+
           {/* Manager & Admin Modules */}
           <Route element={<RequirePermission permission="canViewEmployees" />}>
             <Route path="/employees"     element={<EmployeeList />} />
@@ -115,11 +120,6 @@ export default function AppRoutes() {
           <Route element={<RequirePermission permission="canViewAnalytics" />}>
             <Route path="/analytics" element={<AnalyticsView />} />
           </Route>
-
-          <Route element={<RequirePermission permission="canAccessSettings" />}>
-            <Route path="/system-settings" element={<SystemSettings />} />
-          </Route>
-
         </Route>
       </Route>
 

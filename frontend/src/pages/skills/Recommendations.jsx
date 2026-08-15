@@ -555,7 +555,6 @@ export default function Recommendations() {
             <h1 className="page-header-title text-2xl font-extrabold">
               {isEmployeeView ? 'My Training Recommendations & Learning Roadmaps' : 'Training Recommendations & AI Upskilling'}
             </h1>
-            <span className="badge-purple text-xs font-bold">Module 5</span>
             {isEmployeeView && <span className="badge-blue text-xs font-bold">Personalized AI Engine</span>}
           </div>
           <p className="page-header-subtitle">

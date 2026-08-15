@@ -156,7 +156,6 @@ export default function LearningProgressView({ initialTab = 'enrollments' }) {
             <h1 className="page-header-title text-2xl font-extrabold">
               Learning Progress &amp; Milestones
             </h1>
-            <span className="badge-blue text-xs font-bold">Module 6</span>
             <span className={roleBadge.badgeClass}>{roleBadge.label} View</span>
           </div>
           <p className="page-header-subtitle">

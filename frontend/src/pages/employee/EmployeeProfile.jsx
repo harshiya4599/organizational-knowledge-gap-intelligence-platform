@@ -415,7 +415,7 @@ export default function EmployeeProfile() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="page-header-title text-2xl font-extrabold">Employee Profile &amp; Skill Inventory</h1>
-          <p className="page-header-subtitle">Module 2: Profile creation, self &amp; peer assessment, skill tagging, credentials, experience &amp; department mapping</p>
+          <p className="page-header-subtitle">Profile creation, self &amp; peer assessment, skill tagging, credentials, experience &amp; department mapping</p>
         </div>
 
         <div className="flex items-center gap-2.5 self-start md:self-auto shrink-0">

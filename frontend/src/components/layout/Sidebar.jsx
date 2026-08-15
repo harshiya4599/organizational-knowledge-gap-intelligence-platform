@@ -140,6 +140,21 @@ const Icons = {
       <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
     </svg>
   ),
+  assessments: (
+    <svg className="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="9" y1="15" x2="15" y2="15"/>
+      <line x1="9" y1="11" x2="15" y2="11"/>
+      <polyline points="9 7 10 7 11 7"/>
+    </svg>
+  ),
+  notifications: (
+    <svg className="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+      <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+    </svg>
+  ),
 };
 
 export default function Sidebar({ mobileOpen, onCloseMobile }) {
@@ -153,17 +168,19 @@ export default function Sidebar({ mobileOpen, onCloseMobile }) {
       {
         label: 'Overview',
         items: [
-          { to: '/dashboard', label: 'Dashboard', icon: Icons.dashboard },
-          { to: '/profile',   label: 'My Profile', icon: Icons.profile },
+          { to: '/dashboard',     label: 'Dashboard',     icon: Icons.dashboard },
+          { to: '/profile',       label: 'My Profile',    icon: Icons.profile },
+          { to: '/notifications', label: 'Notifications', icon: Icons.notifications },
         ],
       },
       {
         label: 'My Skills & Diagnostics',
         items: [
-          { to: '/employee-skills',   label: 'My Skills',          icon: Icons.employeeSkills },
-          { to: '/competency-matrix', label: 'Competency Matrix', icon: Icons.competency },
-          { to: '/gap-analysis',      label: 'Gap Analysis',      icon: Icons.gap },
-          { to: '/recommendations',   label: 'Recommendations',   icon: Icons.recommendations },
+          { to: '/employee-skills',   label: 'My Skills',            icon: Icons.employeeSkills },
+          { to: '/competency-matrix', label: 'Competency Matrix',   icon: Icons.competency },
+          { to: '/gap-analysis',      label: 'Gap Analysis',        icon: Icons.gap },
+          { to: '/recommendations',   label: 'Recommendations',     icon: Icons.recommendations },
+          { to: '/assessments',       label: 'Assessments & Surveys', icon: Icons.assessments },
         ],
       },
       {
@@ -185,8 +202,9 @@ export default function Sidebar({ mobileOpen, onCloseMobile }) {
       {
         label: 'Overview',
         items: [
-          { to: '/dashboard', label: 'Dashboard', icon: Icons.dashboard },
-          { to: '/profile',   label: 'My Profile', icon: Icons.profile },
+          { to: '/dashboard',     label: 'Dashboard',     icon: Icons.dashboard },
+          { to: '/profile',       label: 'My Profile',    icon: Icons.profile },
+          { to: '/notifications', label: 'Notifications', icon: Icons.notifications },
         ],
       },
       {
@@ -200,9 +218,10 @@ export default function Sidebar({ mobileOpen, onCloseMobile }) {
       {
         label: 'Competency & Analysis',
         items: [
-          { to: '/competency-matrix', label: 'Team Competencies', icon: Icons.competency },
-          { to: '/gap-analysis',      label: 'Team Gap Analysis', icon: Icons.gap },
-          { to: '/recommendations',   label: 'Recommendations',  icon: Icons.recommendations },
+          { to: '/competency-matrix', label: 'Team Competencies',   icon: Icons.competency },
+          { to: '/gap-analysis',      label: 'Team Gap Analysis',   icon: Icons.gap },
+          { to: '/recommendations',   label: 'Recommendations',     icon: Icons.recommendations },
+          { to: '/assessments',       label: 'Team Assessments',    icon: Icons.assessments },
         ],
       },
       {
@@ -224,8 +243,9 @@ export default function Sidebar({ mobileOpen, onCloseMobile }) {
       {
         label: 'Overview',
         items: [
-          { to: '/dashboard', label: 'Dashboard', icon: Icons.dashboard },
-          { to: '/profile',   label: 'My Profile', icon: Icons.profile },
+          { to: '/dashboard',     label: 'Dashboard',     icon: Icons.dashboard },
+          { to: '/profile',       label: 'My Profile',    icon: Icons.profile },
+          { to: '/notifications', label: 'Notifications', icon: Icons.notifications },
         ],
       },
       {
@@ -243,6 +263,7 @@ export default function Sidebar({ mobileOpen, onCloseMobile }) {
           { to: '/competency-matrix',       label: 'Competency Matrix',     icon: Icons.competency },
           { to: '/gap-analysis',            label: 'Gap Analysis',          icon: Icons.gap },
           { to: '/recommendations',         label: 'Recommendations',       icon: Icons.recommendations },
+          { to: '/assessments',             label: 'Assessments & Surveys', icon: Icons.assessments },
           { to: '/department-skill-matrix', label: 'Skill Heatmap',        icon: Icons.matrix },
           { to: '/reports',                 label: 'Reports',               icon: Icons.reports },
         ],
@@ -266,7 +287,6 @@ export default function Sidebar({ mobileOpen, onCloseMobile }) {
           { to: '/user-management',     label: 'User Management',     icon: Icons.users },
           { to: '/role-management',     label: 'Role Management',     icon: Icons.roles },
           { to: '/analytics',           label: 'Analytics Engine',    icon: Icons.analytics },
-          { to: '/system-settings',     label: 'System Settings',     icon: Icons.settings },
         ],
       }
     );

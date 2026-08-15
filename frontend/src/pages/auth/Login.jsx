@@ -157,11 +157,8 @@ export default function Login() {
       login(res.user, res.token);
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      if (err.isNetworkError) {
-        setErrors({ form: 'Cannot reach the server. Please try again in a moment.' });
-        return;
-      }
-      setErrors({ form: 'Incorrect username or password. Please try again.' });
+      const msg = err.message || 'Invalid username/email or password.';
+      setErrors({ form: msg });
     } finally {
       setLoading(false);
     }

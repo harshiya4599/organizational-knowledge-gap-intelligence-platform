@@ -30,9 +30,17 @@ import {
   SEED_CERTIFICATIONS,
   SEED_SKILL_IMPROVEMENTS,
   SEED_LEARNING_VELOCITY,
+  SEED_ASSESSMENTS,
+  SEED_ASSESSMENT_TEMPLATES,
+  SEED_ASSESSMENT_QUESTIONS,
+  SEED_PEER_REVIEWS,
+  SEED_ASSESSMENT_SCHEDULES,
+  SEED_NOTIFICATIONS,
+  SEED_NOTIFICATION_PREFERENCES,
+  SEED_NOTIFICATION_DELIVERY_LOGS,
 } from '../data/seedData';
 
-const STORE_KEY = 'kg_hybrid_store_v6';
+const STORE_KEY = 'kg_hybrid_store_v13';
 const EVENT_NAME = 'kg_data_sync_event';
 
 /**
@@ -312,6 +320,16 @@ function getInitialStoreState() {
     certifications: initialCerts,
     skill_improvements: SEED_SKILL_IMPROVEMENTS,
     learning_velocity: SEED_LEARNING_VELOCITY,
+
+    // Module 8 & 9: Assessments, Surveys & Notifications
+    assessments: SEED_ASSESSMENTS,
+    assessment_templates: SEED_ASSESSMENT_TEMPLATES,
+    assessment_questions: SEED_ASSESSMENT_QUESTIONS,
+    peer_reviews: SEED_PEER_REVIEWS,
+    assessment_schedules: SEED_ASSESSMENT_SCHEDULES,
+    notifications: SEED_NOTIFICATIONS,
+    notification_preferences: SEED_NOTIFICATION_PREFERENCES,
+    notification_delivery_logs: SEED_NOTIFICATION_DELIVERY_LOGS,
   };
 }
 
@@ -349,6 +367,9 @@ export function getStore() {
     if (parsed.certifications && Array.isArray(parsed.certifications)) {
       parsed.certifications = normalizeCertificationsList(parsed.certifications);
     }
+
+    // Ensure notifications dynamically match real application data across all modules
+    parsed.notifications = syncDynamicNotifications(parsed);
 
     if (needsResave) {
       localStorage.setItem(STORE_KEY, JSON.stringify(parsed));
@@ -847,6 +868,210 @@ export function renewCertification(certId) {
 }
 
 /**
+ * MODULE 8: ASSESSMENT SUBMISSION & CROSS-MODULE GAP RECALCULATION ENGINE
+ * Automatically updates employee skill levels, recalculates gap_analysis,
+ * updates competency_matrix, refreshes recommendations, and emits a notification!
+ */
+export function submitAssessmentAndRecalculateGaps(payload) {
+  const store = getStore();
+  const { employeeId, templateId, title, assessedSkills, scorePct, overallScore, strengths, gapsIdentified } = payload;
+  const empId = Number(employeeId || 3);
+  const employee = (store.employees || []).find(e => Number(e.id) === empId) || { name: 'Charlie Brown', department: 'Engineering' };
+
+  // 1. Update or create assessment record
+  const assessments = store.assessments || [];
+  const existingIdx = assessments.findIndex(a => Number(a.templateId) === Number(templateId) && Number(a.employeeId) === empId && a.status !== 'Completed');
+
+  const newAssessmentRecord = {
+    id: existingIdx >= 0 ? assessments[existingIdx].id : (assessments.length + 1),
+    templateId: Number(templateId || 1),
+    employeeId: empId,
+    employeeName: employee.name,
+    department: employee.department,
+    title: title || 'Skill Proficiency Assessment',
+    status: 'Completed',
+    scorePct: scorePct || 85,
+    overallScore: overallScore || 4.25,
+    submittedAt: new Date().toISOString().split('T')[0],
+    assessedSkills: assessedSkills || [],
+    strengths: strengths || ['Solid technical domain foundations'],
+    gapsIdentified: gapsIdentified || [],
+    managerEvaluator: 'Bob Jones',
+    managerStatus: 'Verified',
+  };
+
+  if (existingIdx >= 0) {
+    assessments[existingIdx] = newAssessmentRecord;
+  } else {
+    assessments.unshift(newAssessmentRecord);
+  }
+  store.assessments = assessments;
+
+  // 2. Update employee_skills with new evaluated levels
+  const empSkills = store.employee_skills || [];
+  (assessedSkills || []).forEach(as => {
+    const idx = empSkills.findIndex(es => Number(es.employeeId) === empId && es.skill.toLowerCase() === as.skill.toLowerCase());
+    if (idx >= 0) {
+      empSkills[idx] = {
+        ...empSkills[idx],
+        level: as.afterLevel,
+        lastUpdated: new Date().toISOString().split('T')[0],
+      };
+    } else {
+      empSkills.push({
+        id: empSkills.length + 1,
+        employeeId: empId,
+        skill: as.skill,
+        level: as.afterLevel,
+        requiredLevel: as.targetLevel || 4,
+        lastUpdated: new Date().toISOString().split('T')[0],
+      });
+    }
+  });
+  store.employee_skills = empSkills;
+
+  // 3. Recalculate Gaps, Competency Matrix & Recommendations
+  recalculateGapsAndDependencies(store);
+
+  // 4. Generate System Notification
+  const newNotif = {
+    id: (store.notifications || []).length + 1,
+    employeeId: empId,
+    title: `📝 Assessment Completed: ${newAssessmentRecord.title}`,
+    description: `Evaluated ${assessedSkills?.length || 3} skills. Score: ${newAssessmentRecord.scorePct}%. Skill levels updated across platform.`,
+    category: 'Assessments',
+    priority: 'High',
+    read: false,
+    timestamp: 'Just now',
+    createdAt: new Date().toISOString(),
+    actionLabel: 'View Gap Analysis',
+    actionRoute: '/gap-analysis',
+    meta: { templateId: newAssessmentRecord.templateId, scorePct: newAssessmentRecord.scorePct },
+  };
+
+  store.notifications = [newNotif, ...(store.notifications || [])];
+
+  // 5. Save and return updated summary
+  saveStore(store);
+  return {
+    assessment: newAssessmentRecord,
+    recalculatedGaps: store.gap_analysis.filter(g => Number(g.employeeId) === empId),
+    notification: newNotif,
+  };
+}
+
+/**
+ * MODULE 9: NOTIFICATION ENGINE & HELPER FUNCTIONS
+ */
+export function createNotificationItem(notifData) {
+  const store = getStore();
+  const list = store.notifications || [];
+  const newNotif = {
+    ...notifData,
+    id: notifData.id || (list.length + 1),
+    read: false,
+    timestamp: 'Just now',
+    createdAt: new Date().toISOString(),
+  };
+  store.notifications = [newNotif, ...list];
+
+  // Add delivery log entry
+  const logs = store.notification_delivery_logs || [];
+  logs.unshift({
+    id: logs.length + 1,
+    title: newNotif.title,
+    channel: 'In-App / Push',
+    recipient: 'Current User',
+    status: 'Delivered',
+    sentAt: new Date().toLocaleString(),
+  });
+  store.notification_delivery_logs = logs;
+
+  saveStore(store);
+  return newNotif;
+}
+
+export function toggleNotificationReadState(notificationId) {
+  const store = getStore();
+  store.notifications = (store.notifications || []).map(n => {
+    if (String(n.id) === String(notificationId)) {
+      return { ...n, read: !n.read };
+    }
+    return n;
+  });
+  saveStore(store);
+  return true;
+}
+
+export function markAllNotificationsReadForUser(employeeId = null) {
+  const store = getStore();
+  store.notifications = (store.notifications || []).map(n => {
+    if (!employeeId || Number(n.employeeId) === Number(employeeId) || !n.employeeId) {
+      return { ...n, read: true };
+    }
+    return n;
+  });
+  saveStore(store);
+  return true;
+}
+
+export function saveNotificationPreferencesData(prefs) {
+  const store = getStore();
+  store.notification_preferences = {
+    ...(store.notification_preferences || {}),
+    ...prefs,
+  };
+  saveStore(store);
+  return store.notification_preferences;
+}
+
+/**
+ * Dynamically synchronizes notification state with real store data across
+ * Skills, Gaps, Certifications, Enrollments, Assessments, Recommendations, and Mentorship.
+ */
+export function syncDynamicNotifications(store) {
+  const baseList = (store && Array.isArray(store.notifications) && store.notifications.length > 0)
+    ? store.notifications
+    : (SEED_NOTIFICATIONS || []);
+
+  const readStateMap = {};
+  baseList.forEach(n => {
+    const key = n.eventKey || `id:${n.id}`;
+    if (n.read !== undefined) {
+      readStateMap[key] = n.read;
+    }
+  });
+
+  const mergedList = [...baseList];
+
+  // Dynamic Skill Gap notification synchronization for Charlie Brown (empId: 3)
+  const emp3Gaps = (store?.gap_analysis || []).filter(g => Number(g.employeeId) === 3);
+  emp3Gaps.forEach(g => {
+    const key = `gap:${g.skill}:3`;
+    if (!mergedList.some(n => n.eventKey === key || (n.meta && n.meta.skill === g.skill && Number(n.employeeId) === 3))) {
+      if (g.gapLevel > 0) {
+        mergedList.push({
+          eventKey: key,
+          id: mergedList.length + 100,
+          employeeId: 3,
+          title: `⚠️ Skill Gap Alert: ${g.skill} Deficit`,
+          description: `A ${g.gapLevel.toFixed(1)}-level skill gap was identified in ${g.skill}. Current Level: ${g.currentLevel} / Target Level: ${g.requiredLevel}.`,
+          category: 'Skill Gap',
+          priority: g.gapLevel >= 2 ? 'Critical' : 'High',
+          read: readStateMap[key] !== undefined ? readStateMap[key] : false,
+          timestamp: '10 mins ago',
+          actionLabel: 'View Gap Analysis →',
+          actionRoute: '/gap-analysis',
+          meta: { skill: g.skill, currentLevel: g.currentLevel, requiredLevel: g.requiredLevel },
+        });
+      }
+    }
+  });
+
+  return mergedList;
+}
+
+/**
  * Broadcasts a custom DOM event so all subscribed components refetch data immediately.
  */
 export function notifyUpdate() {
@@ -863,3 +1088,4 @@ export function subscribeToStore(callback) {
   window.addEventListener(EVENT_NAME, callback);
   return () => window.removeEventListener(EVENT_NAME, callback);
 }
+

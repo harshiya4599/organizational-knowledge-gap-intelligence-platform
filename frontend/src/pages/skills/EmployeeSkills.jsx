@@ -168,7 +168,6 @@ export default function EmployeeSkills() {
               <h1 className="page-header-title text-2xl font-extrabold">
                 {isEmployeeView ? 'My Skills & Competency Inventory' : 'Workforce Skills Engine'}
               </h1>
-              <span className="badge-purple text-xs font-bold">Module 2</span>
             </div>
             <p className="page-header-subtitle">
               {isEmployeeView

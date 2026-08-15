@@ -233,7 +233,6 @@ export default function CompetencyMatrix() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="page-header-title text-2xl font-extrabold">Competency Framework &amp; Role Benchmarking</h1>
-            <span className="badge-purple text-xs font-bold">Module 3</span>
             {isEmployeeView && <span className="badge-blue text-xs font-bold">Read-Only Benchmark View</span>}
           </div>
           <p className="page-header-subtitle">
