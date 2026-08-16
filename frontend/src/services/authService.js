@@ -182,103 +182,106 @@ export function logout() {
   localStorage.removeItem('auth_user');
 }
 
+/**
+ * Maps requested UI role to backend DB role string (DataSeeder / RoleRepository)
+ */
+export function mapRoleToBackend(requestedRole = 'Employee') {
+  const roleStr = String(requestedRole || '').toLowerCase();
+  if (roleStr.includes('admin')) return 'ROLE_ADMIN';
+  if (roleStr.includes('hr')) return 'ROLE_HR';
+  if (roleStr.includes('manager') || roleStr.includes('lead')) return 'ROLE_MANAGER';
+  if (roleStr.includes('department_head') || roleStr.includes('head')) return 'ROLE_DEPARTMENT_HEAD';
+  return 'ROLE_EMPLOYEE';
+}
+
 export async function register(formData) {
   const {
     firstName = '',
     lastName = '',
+    username = '',
     workEmail = '',
+    email = '',
     jobTitle = '',
     department = 'Engineering',
     organizationName = '',
-    companyDomain = '',
     requestedRole = 'Employee',
     password = '',
   } = formData;
 
-  const emailClean = String(workEmail || '').trim().toLowerCase();
+  const cleanUsername = String(username || '').trim().toLowerCase();
+  const cleanEmail = String(workEmail || email || '').trim().toLowerCase();
+  const rawPassword = String(password || '');
+  const backendRole = mapRoleToBackend(requestedRole);
 
-  // 1. Check for Duplicate Email against Approved Predefined Accounts & Registered Users
-  const isDemoEmail = APPROVED_DEMO_ACCOUNTS.some(acc => acc.email.toLowerCase() === emailClean);
-  const existingUsers = getCollection('users') || [];
-  const isExistingUser = existingUsers.some(u => String(u.email || u.username).toLowerCase() === emailClean);
-
-  if (isDemoEmail || isExistingUser) {
-    throw new Error('An account with this email already exists. Please sign in.');
+  if (!cleanUsername) {
+    throw new Error('Username is required.');
+  }
+  if (!cleanEmail) {
+    throw new Error('Work email address is required.');
+  }
+  if (!rawPassword) {
+    throw new Error('Password is required.');
   }
 
-  // 2. Attempt Real Backend Registration First (Future-Proof Architecture)
+  // 1. Check for Duplicate Email / Username against Approved Predefined Accounts
+  const isDemoDuplicate = APPROVED_DEMO_ACCOUNTS.some(
+    acc => acc.email.toLowerCase() === cleanEmail || acc.username.toLowerCase() === cleanUsername
+  );
+  if (isDemoDuplicate) {
+    throw new Error('An account with this username or email already exists. Please sign in.');
+  }
+
+  // 2. Send EXACT RegisterRequest Payload to Backend API (http://localhost:8080/api/auth/register)
   try {
     const response = await api.post('/api/auth/register', {
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      fullName: `${firstName.trim()} ${lastName.trim()}`,
-      email: emailClean,
-      workEmail: emailClean,
-      jobTitle: jobTitle.trim(),
-      department,
-      organizationName: organizationName.trim(),
-      companyDomain: companyDomain.trim(),
-      requestedRole,
-      password,
+      username: cleanUsername,
+      email: cleanEmail,
+      password: rawPassword,
+      role: backendRole,
     });
 
     if (response.data) {
-      return response.data;
+      const isEmployeeRole = backendRole === 'ROLE_EMPLOYEE';
+      return {
+        success: true,
+        message: response.data.message || 'User registered successfully!',
+        token: response.data.token,
+        status: isEmployeeRole ? 'Active' : 'Pending Approval',
+        record: {
+          username: cleanUsername,
+          email: cleanEmail,
+          workEmail: cleanEmail,
+          name: `${firstName.trim()} ${lastName.trim()}`.trim() || cleanUsername,
+          organizationName: organizationName.trim(),
+          requestedRole,
+          department,
+          jobTitle: jobTitle.trim(),
+        },
+      };
     }
   } catch (backendErr) {
-    console.warn('[AuthService] Backend register unreachable. Processing frontend demo registration:', backendErr);
+    // DO NOT SWALLOW BACKEND API FAILURES OR SHOW FAKE SUCCESS!
+    if (backendErr.response) {
+      const data = backendErr.response.data;
+      let errMsg = data?.message || data?.error;
+
+      if (!errMsg && backendErr.response.status === 404) {
+        errMsg = 'Registration service endpoint (/api/auth/register) was not found or is unavailable on port 8080.';
+      } else if (!errMsg && backendErr.response.status === 409) {
+        errMsg = 'An account with this username or email already exists.';
+      } else if (!errMsg && backendErr.response.status === 400) {
+        errMsg = 'Invalid registration data. Please check username, email, and password.';
+      }
+
+      throw new Error(errMsg || 'Registration failed. Please check your details and try again.');
+    }
+
+    if (backendErr.isNetworkError) {
+      throw new Error('Registration service is unavailable. Please ensure the Spring Boot backend server is running on port 8080.');
+    }
+
+    throw backendErr;
   }
-
-  // 3. Fallback: Process Frontend Demo Account Creation
-  let mappedRole = 'ROLE_EMPLOYEE';
-  let approvalStatus = 'Active';
-  let isApproved = true;
-
-  if (requestedRole.includes('Manager') || requestedRole.includes('Lead')) {
-    mappedRole = 'ROLE_MANAGER';
-    approvalStatus = 'Pending Approval';
-    isApproved = false;
-  } else if (requestedRole.includes('HR') || requestedRole.includes('Head')) {
-    mappedRole = 'ROLE_MANAGER';
-    approvalStatus = 'Pending Approval';
-    isApproved = false;
-  } else if (requestedRole.includes('Admin')) {
-    mappedRole = 'ROLE_ADMIN';
-    approvalStatus = 'Pending Authorization';
-    isApproved = false;
-  }
-
-  const generatedUsername = `${firstName.trim()}.${lastName.trim()}`.toLowerCase().replace(/[^a-z0-9.]/g, '');
-  
-  const registrationRecord = {
-    id: Date.now(),
-    employeeId: existingUsers.length + 10,
-    firstName: firstName.trim(),
-    lastName: lastName.trim(),
-    name: `${firstName.trim()} ${lastName.trim()}`,
-    username: generatedUsername || 'new.user',
-    email: emailClean,
-    workEmail: emailClean,
-    jobTitle: jobTitle.trim(),
-    department,
-    organizationName: organizationName.trim(),
-    companyDomain: companyDomain.trim(),
-    requestedRole,
-    role: mappedRole,
-    status: approvalStatus,
-    isApproved,
-    createdAt: new Date().toISOString(),
-  };
-
-  // Add to local storage collection for persistence & audit
-  addCollectionItem('registered_requests', registrationRecord);
-
-  return {
-    success: true,
-    message: isApproved ? 'Account created successfully!' : 'Registration submitted for organizational approval.',
-    status: approvalStatus,
-    record: registrationRecord,
-  };
 }
 
 export async function getProfile() {

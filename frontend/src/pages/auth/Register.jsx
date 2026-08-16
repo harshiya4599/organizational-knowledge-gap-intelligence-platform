@@ -197,6 +197,8 @@ export default function Register() {
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
+    username: '',
+    userCustomUsername: false,
     workEmail: '',
     jobTitle: '',
     department: 'Engineering',
@@ -268,6 +270,21 @@ export default function Register() {
 
     setForm(prev => {
       const updated = { ...prev, [name]: val };
+
+      // Auto-suggest username if user hasn't manually entered one
+      if ((name === 'firstName' || name === 'lastName') && !prev.userCustomUsername) {
+        const fn = name === 'firstName' ? val : prev.firstName;
+        const ln = name === 'lastName' ? val : prev.lastName;
+        if (fn || ln) {
+          const suggested = `${fn.trim()}.${ln.trim()}`.toLowerCase().replace(/[^a-z0-9.]/g, '');
+          updated.username = suggested;
+        }
+      }
+
+      if (name === 'username') {
+        updated.userCustomUsername = true;
+      }
+
       // Auto-extract domain from work email if companyDomain is empty
       if (name === 'workEmail' && val.includes('@') && !prev.companyDomain) {
         const domainParts = val.split('@')[1];
@@ -291,6 +308,13 @@ export default function Register() {
     }
     if (!form.lastName.trim() || form.lastName.trim().length < 2) {
       e.lastName = 'Last name is required.';
+    }
+    if (!form.username.trim()) {
+      e.username = 'Username is required.';
+    } else if (form.username.trim().length < 3) {
+      e.username = 'Username must be at least 3 characters.';
+    } else if (!/^[a-zA-Z0-9._-]+$/.test(form.username.trim())) {
+      e.username = 'Username can only contain letters, numbers, dots, and underscores.';
     }
     if (!form.workEmail.trim()) {
       e.workEmail = 'Work email address is required.';
@@ -542,6 +566,25 @@ export default function Register() {
                       />
                       <FieldError id="reg-lastname-err" message={errors.lastName} />
                     </div>
+                  </div>
+
+                  {/* Username */}
+                  <div>
+                    <label htmlFor="reg-username" className="form-label text-xs">Username *</label>
+                    <div className="input-icon-wrap">
+                      <span className="input-icon-left"><IconUser /></span>
+                      <input
+                        id="reg-username"
+                        name="username"
+                        type="text"
+                        required
+                        value={form.username}
+                        onChange={handleChange}
+                        placeholder="e.g. arunvs or jane.smith"
+                        className={errors.username ? 'form-input-icon form-input-icon-error text-xs' : 'form-input-icon text-xs'}
+                      />
+                    </div>
+                    <FieldError id="reg-username-err" message={errors.username} />
                   </div>
 
                   {/* Work Email */}
